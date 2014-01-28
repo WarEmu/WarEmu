@@ -52,7 +52,7 @@ namespace WorldServer
                 Log.Error("F_PLAYER_STATE2", e.ToString());
             }
 
-            if (packet.Size < 18)
+            if (packet.Size < 17)
             {
                 Plr.IsMoving = false;
                 return;
@@ -70,7 +70,7 @@ namespace WorldServer
             UInt16 Y = packet.GetUint16R();
             byte Unk1 = packet.GetUint8();
             UInt16 Z = packet.GetUint16R();
-            byte Unk2 = packet.GetUint8();
+            //byte Unk2 = packet.GetUint8();
 
             Heading /= 8;
             X /= 2;
