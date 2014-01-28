@@ -86,6 +86,7 @@
     <Compile Include="NetWork\Handler\AuthentificationHandlers.cs" />
     <Compile Include="NetWork\Handler\CharacterHandlers.cs" />
     <Compile Include="NetWork\Handler\CombatHandlers.cs" />
+    <Compile Include="NetWork\Handler\InterfaceHandlers.cs" />
     <Compile Include="NetWork\Handler\InventoryHandlers.cs" />
     <Compile Include="NetWork\Handler\MovementHandlers.cs" />
     <Compile Include="NetWork\Handler\QuestHandlers.cs" />

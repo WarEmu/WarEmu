@@ -368,6 +368,8 @@ namespace WorldServer
 
         public override void SetDeath(Unit Killer)
         {
+            UInt16 Time = 600; // Time to AutoResurrect in Seconds. 10 Minutes in Official Servers
+
             Killer.QtsInterface.HandleEvent(Objective_Type.QUEST_KILL_PLAYERS, 0, 1);
 
             base.SetDeath(Killer);
@@ -375,12 +377,36 @@ namespace WorldServer
             if(Killer.IsPlayer())
                 WorldMgr.GenerateRenown(Killer.GetPlayer(), this);
 
-            EvtInterface.AddEvent(RespawnPlayer, 20000, 1);
-            SendDialog((ushort)5, (ushort)20);
+            PacketOut Out = new PacketOut((byte)Opcodes.F_PLAYER_DEATH);
+            Out.WriteUInt16(Oid);
+            Out.WriteUInt16(Time);
+            SendPacket(Out);
+
+            EvtInterface.AddEvent(AutomaticRespawnPlayer, Time * 1000, 1); // If the player don't resurrect. autoresurrect in 10 Minutes.
+        }
+
+        public void AutomaticRespawnPlayer()
+        {
+            RespawnPlayer();
+        }
+	
+        public void PreRespawnPlayer()
+        {
+            // Remove automatic respawn function
+            EvtInterface.RemoveEvent(AutomaticRespawnPlayer);
+
+            if (!EvtInterface.HasEvent(RespawnPlayer))
+            {
+                SendDialog((ushort)5, (ushort)5);
+                EvtInterface.AddEvent(RespawnPlayer, 5000, 1);
+            }
         }
 
         public void RespawnPlayer()
         {
+            if (!GetPlayer().IsDead)
+                return;
+
             Zone_Respawn Respawn = WorldMgr.GetZoneRespawn(Zone.ZoneId, (byte)Realm, this);
             if (Respawn != null)
                 SafePinTeleport(Respawn.PinX, Respawn.PinY, Respawn.PinZ, Respawn.WorldO);
