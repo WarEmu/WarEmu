@@ -232,7 +232,7 @@ namespace WorldServer
             return Quest;
         }
 
-        public Character_quest_inprogress GetQuestDone(UInt16 QuestID)
+        public Character_quest_inprogress GetQuestInProgress(UInt16 QuestID)
         {
             Character_quest_inprogress Quest;
             _InProgressQuests.TryGetValue(QuestID, out Quest);
@@ -319,19 +319,19 @@ namespace WorldServer
             return true;
         }
 
-        public void DeclineQuest(Quest Quest)
+        public void DeclineQuest(UInt16 QuestID)
         {
-            if (Quest == null)
-                return;
+            Character_quest_inprogress Quest = GetQuestInProgress(QuestID);
 
-            if (!HasQuest(Quest.Entry))
-                return;
+            CharMgr.Database.DeleteObject(Quest);
+
+            SendQuestState(Quest.Quest, QuestCompletion.QUESTCOMPLETION_ABANDONED);
         }
 
         public bool DoneQuest(UInt16 QuestID)
         {
             Character_quest Quest = GetQuest(QuestID);
-            Character_quest_inprogress IQuest = GetQuestDone(QuestID);
+            Character_quest_inprogress IQuest = GetQuestInProgress(QuestID);
 
             if (Quest == null || !Quest.IsDone())
                 return false;
@@ -562,12 +562,11 @@ namespace WorldServer
 
             Plr.SendPacket(Out);
         }
+
         public void BuildQuest(PacketOut Out, Quest Q)
         {
             Out.WriteByte(Q.ChoiceCount);
             Out.WriteByte(0);
-
-            
         }
 
         static public void BuildObjectives(PacketOut Out, List<Quest_Objectives> Objs)
@@ -597,7 +596,7 @@ namespace WorldServer
 
         public void SendQuest(ushort QuestID)
         {
-            Character_quest_inprogress CQuest = GetQuestDone(QuestID);
+            Character_quest_inprogress CQuest = GetQuestInProgress(QuestID);
             SendQuest(CQuest);
         }
 

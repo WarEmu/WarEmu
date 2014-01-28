@@ -118,14 +118,13 @@ namespace WorldServer
                     {
                         Log.Info("F_REQUEST_QUEST", "Show Quest : " + QuestID);
                         cclient.Plr.QtsInterface.SendQuest(QuestID);
-
                     } break;
 
                 case 1: // Decline Quest
                     {
-
-                    }
-                    break;
+                        Log.Info("F_REQUEST_QUEST", "Decline Quest : " + QuestID);
+                        cclient.Plr.QtsInterface.DeclineQuest(QuestID);
+                    } break;
 
                 case 2: // Send To Group
                     {

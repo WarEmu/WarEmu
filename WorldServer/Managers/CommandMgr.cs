@@ -292,7 +292,7 @@ namespace WorldServer
             Text = Text.Remove(0, Pos + 1);
 
             Player Receiver = Player.GetPlayer(ReceiverName);
-            if (Receiver == null || !Receiver.IsInWorld())
+            if (Receiver == null || !Receiver.IsInWorld() || Plr.Realm != Receiver.Realm)
                 Plr.SendLocalizeString(ReceiverName, GameData.Localized_text.TEXT_SN_LISTS_ERR_PLAYER_NOT_FOUND);
             else
             {
