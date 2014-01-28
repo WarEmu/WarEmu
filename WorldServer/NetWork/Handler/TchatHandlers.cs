@@ -25,5 +25,24 @@ namespace WorldServer
             Log.Success("Text", "Unk = " + Unk + ",String=" + Text);
             CommandMgr.HandleText(cclient.Plr, Text);
         }
+
+        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_EMOTE, "onEmote")]
+        static public void F_EMOTE(BaseClient client, PacketIn packet)
+        {
+            GameClient cclient = client as GameClient;
+
+            if (cclient.Plr == null)
+                return;
+
+            UInt32 emote = packet.GetUint32();
+
+            PacketOut Out = new PacketOut((byte)Opcodes.F_EMOTE);
+            Out.WriteUInt16(cclient.Plr.Oid);
+            Out.WriteUInt16((UInt16)emote);
+            if (cclient.Plr.CbtInterface.HasTarget())
+                Out.WriteUInt16(cclient.Plr.CbtInterface.CurrentTarget.Target.Oid);
+            cclient.Plr.DispatchPacket(Out, false);
+            cclient.Plr.SendPacket(Out);
+        }
     }
 }
