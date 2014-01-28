@@ -1,0 +1,131 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{D5C98F3A-D5D2-4AED-A5A7-06D2DE095095}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>FrameWork</RootNamespace>
+    <AssemblyName>FrameWork</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Google.ProtocolBuffers">
+      <HintPath>..\deps\protobuf\Google.ProtocolBuffers.dll</HintPath>
+    </Reference>
+    <Reference Include="MySql.Data">
+      <HintPath>Database\MySql.Data.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Remoting" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Config\aConfigAttributes.cs" />
+    <Compile Include="Config\ConfigMgr.cs" />
+    <Compile Include="Console\ConsoleHandlerAttribute.cs" />
+    <Compile Include="Console\ConsoleMgr.cs" />
+    <Compile Include="Console\IConsoleHandler.cs" />
+    <Compile Include="Database\Attributes\DataElement.cs" />
+    <Compile Include="Database\Attributes\DataTable.cs" />
+    <Compile Include="Database\Attributes\PrimaryKey.cs" />
+    <Compile Include="Database\Attributes\ReadOnly.cs" />
+    <Compile Include="Database\Attributes\Relation.cs" />
+    <Compile Include="Database\Cache\CacheException.cs" />
+    <Compile Include="Database\Cache\ICache.cs" />
+    <Compile Include="Database\Cache\SimpleCache.cs" />
+    <Compile Include="Database\Connection\ConnectionType.cs" />
+    <Compile Include="Database\Connection\DataConnection.cs" />
+    <Compile Include="Database\DatabaseExeption.cs" />
+    <Compile Include="Database\DataObject.cs" />
+    <Compile Include="Database\DataTableHandler.cs" />
+    <Compile Include="Database\DBManager.cs" />
+    <Compile Include="Database\Handler\MysqlObjectDatabase.cs" />
+    <Compile Include="Database\IObjectDatabase.cs" />
+    <Compile Include="Database\ObjectDatabase.cs" />
+    <Compile Include="Database\Transaction\IsolationLevel.cs" />
+    <Compile Include="Database\UniqueID\IDGenerator.cs" />
+    <Compile Include="Loader\LoaderMgr.cs" />
+    <Compile Include="Loader\LoadingFunctionAttribute.cs" />
+    <Compile Include="Logs\Log.cs" />
+    <Compile Include="Logs\LogConfig.cs" />
+    <Compile Include="NetWork\ByteSwap.cs" />
+    <Compile Include="NetWork\Clients\BaseClient.cs" />
+    <Compile Include="NetWork\Clients\IPacketHandler.cs" />
+    <Compile Include="NetWork\Clients\PacketHandlerAttribute.cs" />
+    <Compile Include="NetWork\Clients\PacketIn.cs" />
+    <Compile Include="NetWork\Clients\PacketOut.cs" />
+    <Compile Include="NetWork\Crypt\CryptAttribute.cs" />
+    <Compile Include="NetWork\Crypt\ICryptHandler.cs" />
+    <Compile Include="NetWork\Marshal.cs" />
+    <Compile Include="NetWork\ProtocolBuffers\AuthSessionTokenReplyProto.cs" />
+    <Compile Include="NetWork\ProtocolBuffers\AuthSessionTokenReqProto.cs" />
+    <Compile Include="NetWork\ProtocolBuffers\GetAcctPropListReplyProto.cs" />
+    <Compile Include="NetWork\ProtocolBuffers\GetCharSummaryListReplyProto.cs" />
+    <Compile Include="NetWork\ProtocolBuffers\GetClusterListReplyProto.cs" />
+    <Compile Include="NetWork\ProtocolBuffers\VerifyProtocolReplyProto.cs" />
+    <Compile Include="NetWork\ProtocolBuffers\VerifyProtocolReqProto.cs" />
+    <Compile Include="NetWork\TCPManager.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Remoting\ClientInfo.cs" />
+    <Compile Include="Remoting\ClientMgr.cs" />
+    <Compile Include="Remoting\RpcClient.cs" />
+    <Compile Include="Remoting\RpcObject.cs" />
+    <Compile Include="Remoting\RpcServer.cs" />
+    <Compile Include="Remoting\ServerMgr.cs" />
+    <Compile Include="Utils\Color.cs" />
+    <Compile Include="Utils\RandomMgr.cs" />
+    <Compile Include="Utils\Utils.cs" />
+    <Compile Include="Utils\Vectors.cs" />
+    <Compile Include="zlib\Adler32.cs" />
+    <Compile Include="zlib\Deflate.cs" />
+    <Compile Include="zlib\InfBlocks.cs" />
+    <Compile Include="zlib\InfCodes.cs" />
+    <Compile Include="zlib\Inflate.cs" />
+    <Compile Include="zlib\InfTree.cs" />
+    <Compile Include="zlib\StaticTree.cs" />
+    <Compile Include="zlib\SupportClass.cs" />
+    <Compile Include="zlib\Tree.cs" />
+    <Compile Include="zlib\ZInputStream.cs" />
+    <Compile Include="zlib\Zlib.cs" />
+    <Compile Include="zlib\ZlibMgr.cs" />
+    <Compile Include="zlib\ZOutputStream.cs" />
+    <Compile Include="zlib\ZStream.cs" />
+    <Compile Include="zlib\ZStreamException.cs" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

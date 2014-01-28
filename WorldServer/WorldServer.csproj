@@ -1,0 +1,173 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.30729</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{1552992A-BA62-4639-AB53-6FA36E5B4AB1}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>WorldServer</RootNamespace>
+    <AssemblyName>WorldServer</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
+    <OldToolsVersion>3.5</OldToolsVersion>
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="FrameWork, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\FrameWork\bin\Release\FrameWork.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Xml.Linq">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Data.DataSetExtensions">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Configs\WorldConfigs.cs" />
+    <Compile Include="Managers\AreaMapMgr.cs" />
+    <Compile Include="Managers\CharMgr.cs" />
+    <Compile Include="Managers\CommandMgr.cs" />
+    <Compile Include="Managers\GmCommand.cs" />
+    <Compile Include="Managers\HeightMapMgr.cs" />
+    <Compile Include="Managers\LootsMgr.cs" />
+    <Compile Include="NetWork\Handler\AuthentificationHandlers.cs" />
+    <Compile Include="NetWork\Handler\CharacterHandlers.cs" />
+    <Compile Include="NetWork\Handler\CombatHandlers.cs" />
+    <Compile Include="NetWork\Handler\InventoryHandlers.cs" />
+    <Compile Include="NetWork\Handler\MovementHandlers.cs" />
+    <Compile Include="NetWork\Handler\QuestHandlers.cs" />
+    <Compile Include="NetWork\Handler\SocialHandlers.cs" />
+    <Compile Include="NetWork\Handler\TchatHandlers.cs" />
+    <Compile Include="NetWork\Handler\F_UNK1.cs" />
+    <Compile Include="World\Ability\Ability.cs" />
+    <Compile Include="World\Ability\AbilityMgr.cs" />
+    <Compile Include="World\Ability\AbilityTypes\DealDamageHandler.cs" />
+    <Compile Include="World\Ability\IAbilityTypeHandler.cs" />
+    <Compile Include="World\AI\ABrain.cs" />
+    <Compile Include="World\AI\AgressiveBrain.cs" />
+    <Compile Include="World\AI\GuardBrain.cs" />
+    <Compile Include="World\AI\PassiveBrain.cs" />
+    <Compile Include="World\Interfaces\AbilityInterface.cs" />
+    <Compile Include="World\Interfaces\AIInterface.cs" />
+    <Compile Include="World\Interfaces\BaseInterface.cs" />
+    <Compile Include="World\Interfaces\CombatInterface.cs" />
+    <Compile Include="World\Interfaces\EventInterface.cs" />
+    <Compile Include="World\Objects\Item.cs" />
+    <Compile Include="World\Interfaces\ItemsInterface.cs" />
+    <Compile Include="World\Interfaces\MovementInterface.cs" />
+    <Compile Include="World\Interfaces\QuestsInterface.cs" />
+    <Compile Include="World\Interfaces\SocialInterface.cs" />
+    <Compile Include="World\Interfaces\StatsInterface.cs" />
+    <Compile Include="World\Interfaces\TokInterface.cs" />
+    <Compile Include="World\Map\CellMgr.cs" />
+    <Compile Include="World\Map\RegionMgr.cs" />
+    <Compile Include="Managers\WorldMgr.cs" />
+    <Compile Include="World\Map\ZoneMgr.cs" />
+    <Compile Include="NetWork\Crypt\RC4Crypto.cs" />
+    <Compile Include="NetWork\GameClient.cs" />
+    <Compile Include="NetWork\Opcodes.cs" />
+    <Compile Include="NetWork\TCPServer.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="World\Objects\ChapterObject.cs" />
+    <Compile Include="World\Objects\Creature.cs" />
+    <Compile Include="World\Objects\Door.cs" />
+    <Compile Include="World\Objects\GameObject.cs" />
+    <Compile Include="World\Objects\Object.cs" />
+    <Compile Include="World\Objects\Player.cs" />
+    <Compile Include="World\Objects\PQuestObject.cs" />
+    <Compile Include="World\Objects\Unit.cs" />
+    <Compile Include="World\Positions\IPoint2D.cs" />
+    <Compile Include="World\Positions\IPoint3D.cs" />
+    <Compile Include="World\Positions\Point2D.cs" />
+    <Compile Include="World\Positions\Point3D.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Common\Common.csproj">
+      <Project>{8BC085CD-429B-41D1-BB47-9621FD32EC23}</Project>
+      <Name>Common</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Windows.Installer.3.1">
+      <Visible>False</Visible>
+      <ProductName>Windows Installer 3.1</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

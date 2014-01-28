@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<WorldConfigs xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <IConfiguredTheFile>true</IConfiguredTheFile>
+  <AccountCacherInfo>
+    <RpcLocalIp>127.0.0.1</RpcLocalIp>
+    <RpcServerIp>127.0.0.1</RpcServerIp>
+    <RpcServerPort>6800</RpcServerPort>
+  </AccountCacherInfo>
+  <LogLevel>
+    <Info>true</Info>
+    <Successs>true</Successs>
+    <Notice>true</Notice>
+    <Error>true</Error>
+    <Debug>false</Debug>
+    <Tcp>false</Tcp>
+    <Dump>false</Dump>
+  </LogLevel>
+  <CharacterDatabase>
+    <Server>127.0.0.1</Server>
+    <Port>3306</Port>
+    <Database>war_characters</Database>
+    <Username>root</Username>
+    <Password>123</Password>
+    <Custom>Treat Tiny As Boolean=False</Custom>
+  </CharacterDatabase>
+  <WorldDatabase>
+    <Server>127.0.0.1</Server>
+    <Port>3306</Port>
+    <Database>war_world</Database>
+    <Username>root</Username>
+    <Password>123</Password>
+    <Custom>Treat Tiny As Boolean=False</Custom>
+  </WorldDatabase>
+  <RealmId>1</RealmId>
+  <GlobalLootRate>1</GlobalLootRate>
+  <CommonLootRate>1</CommonLootRate>
+  <UncommonLootRate>1</UncommonLootRate>
+  <RareLootRate>1</RareLootRate>
+  <VeryRareLootRate>1</VeryRareLootRate>
+  <ArtifactLootRate>1</ArtifactLootRate>
+  <GoldRate>1</GoldRate>
+  <XpRate>1</XpRate>
+  <RenownRate>1</RenownRate>
+  <ZoneFolder>zones/</ZoneFolder>
+</WorldConfigs>

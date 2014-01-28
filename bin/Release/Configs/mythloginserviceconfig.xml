@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RootElementOfAnyName>
+  <MythLoginServiceConfig>
+    <Settings>
+      <ProductId>2</ProductId>
+      <MessageTimeoutSecs>24</MessageTimeoutSecs>
+    </Settings>
+    <RegionList>
+      <Region regionName="prod">
+        <PingServer serverName="None">
+          <Address>0.0.0.0</Address>
+          <Port>0</Port>
+        </PingServer>
+       <LoginServerList>
+          <LoginServer serverName="ApsServer">
+            <Address>127.0.0.1</Address>
+            <Port>8048</Port>
+          </LoginServer>
+       </LoginServerList>
+      </Region>
+    </RegionList>
+  </MythLoginServiceConfig>
+</RootElementOfAnyName>
