@@ -76,11 +76,11 @@ namespace WorldServer
             Log.Dump("F_INTERACT", packet.ToArray(), 0, packet.ToArray().Length);
 
             InteractMenu Menu = new InteractMenu();
+            Menu.Unk = packet.GetUint16();
             Menu.Oid = packet.GetUint16();
             Menu.Menu = packet.GetUint16();
             Menu.Page = packet.GetUint8();
             Menu.Num = packet.GetUint8();
-            Menu.Unk = packet.GetUint16();
             Menu.SellCount = packet.GetUint16();
             Menu.Count = packet.GetUint16();
 
