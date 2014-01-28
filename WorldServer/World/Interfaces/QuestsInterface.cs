@@ -79,7 +79,7 @@ namespace WorldServer
 
             List<Quest> Starter = WorldMgr.GetStartQuests(Entry);
             List<Quest> Finisher = WorldMgr.GetFinishersQuests(Entry);
-            List<Quest> InProgress = Starter != null ? Starter.FindAll(info => Plr.QtsInterface.HasQuest(info.Entry)) : null;
+            List<Quest> InProgress = Starter != null ? Starter.FindAll(info => Plr.QtsInterface.HasQuest(info.Entry) && !Plr.QtsInterface.HasDoneQuest(info.Entry)) : null;
 
             string Text = WorldMgr.GetCreatureText(Entry);
 
