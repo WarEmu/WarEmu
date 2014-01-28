@@ -154,6 +154,7 @@ namespace WorldServer
         #region Players
 
         public Dictionary<int, Character_quest> _Quests = new Dictionary<int, Character_quest>();
+        public Dictionary<int, Character_quest_inprogress> _InProgressQuests = new Dictionary<int, Character_quest_inprogress>();
 
         public void Load(Character_quest[] Quests)
         {
@@ -171,6 +172,26 @@ namespace WorldServer
 
                 if (!_Quests.ContainsKey(Quest.QuestID))
                     _Quests.Add(Quest.QuestID, Quest);
+            }
+        }
+
+        public void Load(Character_quest_inprogress[] InProgressQuests)
+        {
+            if (InProgressQuests == null)
+            return;
+	
+            foreach (Character_quest_inprogress Quest in InProgressQuests)
+            {
+                Quest.Quest = WorldMgr.GetQuest(Quest.QuestID);
+
+                if (Quest.Quest == null)
+                    continue;
+
+                foreach (Character_InProgressObjectives Obj in Quest._InProgressObjectives)
+                    Obj.Objective = WorldMgr.GetQuestObjective(Obj.ObjectiveID);
+
+                if (!_InProgressQuests.ContainsKey(Quest.QuestID))
+                    _InProgressQuests.Add(Quest.QuestID, Quest);
             }
         }
 
@@ -208,6 +229,13 @@ namespace WorldServer
         {
             Character_quest Quest;
             _Quests.TryGetValue(QuestID, out Quest);
+            return Quest;
+        }
+
+        public Character_quest_inprogress GetQuestDone(UInt16 QuestID)
+        {
+            Character_quest_inprogress Quest;
+            _InProgressQuests.TryGetValue(QuestID, out Quest);
             return Quest;
         }
 
@@ -258,6 +286,12 @@ namespace WorldServer
             CQuest.CharacterID = GetPlayer().CharacterId;
             CQuest.Quest = Quest;
 
+            // F_QUEST_LIST Quests not done
+            Character_quest_inprogress IQuest = new Character_quest_inprogress();
+            IQuest.QuestID = Quest.Entry;
+            IQuest.CharacterID = GetPlayer().CharacterId;
+            IQuest.Quest = Quest;
+
             foreach(Quest_Objectives QObj in Quest.Objectives)
             {
                 Character_Objectives CObj = new Character_Objectives();
@@ -265,10 +299,21 @@ namespace WorldServer
                 CObj.Objective = QObj;
                 CObj.ObjectiveID = QObj.Guid;
                 CQuest._Objectives.Add(CObj);
+
+                // F_QUEST_LIST Quests not done.
+                Character_InProgressObjectives IObj = new Character_InProgressObjectives();
+                IObj.Count = 0;
+                IObj.Objective = QObj;
+                IObj.ObjectiveID = QObj.Guid;
+                IQuest._InProgressObjectives.Add(IObj);
             }
 
             _Quests.Add(Quest.Entry, CQuest);
             CharMgr.Database.AddObject(CQuest);
+
+            // Add Quests into character_quest_inprogress Table.
+            _InProgressQuests.Add(Quest.Entry, IQuest);
+            CharMgr.Database.AddObject(IQuest);
 
             SendQuestState(Quest, QuestCompletion.QUESTCOMPLETION_OFFER);
             return true;
@@ -286,6 +331,7 @@ namespace WorldServer
         public bool DoneQuest(UInt16 QuestID)
         {
             Character_quest Quest = GetQuest(QuestID);
+            Character_quest_inprogress IQuest = GetQuestDone(QuestID);
 
             if (Quest == null || !Quest.IsDone())
                 return false;
@@ -321,6 +367,10 @@ namespace WorldServer
             SendQuestState(Quest.Quest, QuestCompletion.QUESTCOMPLETION_DONE);
 
             CharMgr.Database.SaveObject(Quest);
+
+            // When you done the quest, delete the entry, to not display in the list (F_QUEST_LIST)
+            CharMgr.Database.DeleteObject(IQuest);
+
             return true;
         }
 
@@ -337,33 +387,72 @@ namespace WorldServer
         {
             foreach (Character_quest Quest in _Quests.Values)
             {
-                foreach (Character_Objectives Objective in Quest._Objectives)
                 {
-                    if (Objective.Objective.ObjType == (uint)Type && !Objective.IsDone())
+                    foreach (Character_Objectives Objective in Quest._Objectives)
                     {
-                        bool CanAdd = false;
+                        if (Objective.Objective.ObjType == (uint)Type && !Objective.IsDone())
+                        {
+                            bool CanAdd = false;
 
-                        if (Type == Objective_Type.QUEST_SPEACK_TO || Type == Objective_Type.QUEST_KILL_MOB || Type == Objective_Type.QUEST_PROTECT_UNIT)
-                        {
-                            if (Objective.Objective.Creature != null && Entry == Objective.Objective.Creature.Entry)
+                            if (Type == Objective_Type.QUEST_SPEACK_TO || Type == Objective_Type.QUEST_KILL_MOB || Type == Objective_Type.QUEST_PROTECT_UNIT)
+                            {
+                                if (Objective.Objective.Creature != null && Entry == Objective.Objective.Creature.Entry)
+                                    CanAdd = true;
+                            }
+                            else if (Type == Objective_Type.QUEST_GET_ITEM)
+                            {
+                                if (Objective.Objective.Item != null && Entry == Objective.Objective.Item.Entry)
+                                    CanAdd = true;
+                            }
+                            else if (Type == Objective_Type.QUEST_USE_GO)
+                            {
                                 CanAdd = true;
-                        }
-                        else if (Type == Objective_Type.QUEST_GET_ITEM)
-                        {
-                            if (Objective.Objective.Item != null && Entry == Objective.Objective.Item.Entry)
-                                CanAdd = true;
-                        }
-                        else if (Type == Objective_Type.QUEST_USE_GO)
-                        {
-                            CanAdd = true;
-                        }
+                            }
 
-                        if (CanAdd)
+                            if (CanAdd)
+                            {
+                                Objective.Count += Count;
+                                Quest.Dirty = true;
+                                SendQuestUpdate(Quest, Objective);
+                                CharMgr.Database.SaveObject(Quest);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Quest Objectives display on F_QUEST_LIST
+
+            foreach (Character_quest_inprogress Quest in _InProgressQuests.Values)
+            {
+                {
+                    foreach (Character_InProgressObjectives Objective in Quest._InProgressObjectives)
+                    {
+                        if (Objective.Objective.ObjType == (uint)Type && !Objective.IsDone())
                         {
-                            Objective.Count += Count;
-                            Quest.Dirty = true;
-                            SendQuestUpdate(Quest, Objective);
-                            CharMgr.Database.SaveObject(Quest);
+                            bool CanAdd = false;
+
+                            if (Type == Objective_Type.QUEST_SPEACK_TO || Type == Objective_Type.QUEST_KILL_MOB || Type == Objective_Type.QUEST_PROTECT_UNIT)
+                            {
+                                if (Objective.Objective.Creature != null && Entry == Objective.Objective.Creature.Entry)
+                                    CanAdd = true;
+                            }
+                            else if (Type == Objective_Type.QUEST_GET_ITEM)
+                            {
+                                if (Objective.Objective.Item != null && Entry == Objective.Objective.Item.Entry)
+                                    CanAdd = true;
+                            }
+                            else if (Type == Objective_Type.QUEST_USE_GO)
+                            {
+                                CanAdd = true;
+                            }
+
+                            if (CanAdd)
+                            {
+                                Objective.Count += Count;
+                                Quest.Dirty = true;
+                                CharMgr.Database.SaveObject(Quest);
+                            }
                         }
                     }
                 }
@@ -492,11 +581,12 @@ namespace WorldServer
             }
         }
 
-        static public void BuildObjectives(PacketOut Out, List<Character_Objectives> Objs)
+        // Change "Character_Objectives" for "Character_InProgressObjectives" for show Quest Objectives in F_QUEST_LIST
+        static public void BuildObjectives(PacketOut Out, List<Character_InProgressObjectives> Objs)
         {
             Out.WriteByte((byte)Objs.Count);
 
-            foreach (Character_Objectives Objective in Objs)
+            foreach (Character_InProgressObjectives Objective in Objs)
             {
                 Out.WriteByte((byte)Objective.Count);
                 Out.WriteByte((byte)Objective.Objective.ObjCount);
@@ -507,15 +597,15 @@ namespace WorldServer
 
         public void SendQuest(ushort QuestID)
         {
-            Character_quest CQuest = GetQuest(QuestID);
+            Character_quest_inprogress CQuest = GetQuestDone(QuestID);
             SendQuest(CQuest);
         }
 
         public void SendQuests()
         {
             PacketOut Out = new PacketOut((byte)Opcodes.F_QUEST_LIST);
-            Out.WriteByte((byte)_Quests.Count);
-            foreach (Character_quest Quest in _Quests.Values)
+            Out.WriteByte((byte)_InProgressQuests.Count);
+            foreach (Character_quest_inprogress Quest in _InProgressQuests.Values)
             {
                 Out.WriteUInt16(Quest.QuestID);
                 Out.WriteByte(0);
@@ -523,11 +613,11 @@ namespace WorldServer
                 Out.WriteByte(0);
             }
 
-            Log.Info("QuestInterface", "Sended Quest : " + _Quests.Count);
+            Log.Info("QuestInterface", "Sended Quest : " + _InProgressQuests.Count);
             GetPlayer().SendPacket(Out);
         }
 
-        public void SendQuest(Character_quest CQuest)
+        public void SendQuest(Character_quest_inprogress CQuest)
         {
             if (CQuest == null)
             {
@@ -553,7 +643,7 @@ namespace WorldServer
 
             Packet.WriteByte(0);
 
-            BuildObjectives(Packet, CQuest._Objectives);
+            BuildObjectives(Packet, CQuest._InProgressObjectives);
 
             Packet.WriteByte(1);
 
