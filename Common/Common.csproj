@@ -83,6 +83,7 @@
     <Compile Include="Database\Character\Characters_items.cs" />
     <Compile Include="Database\Account\Realm.cs" />
     <Compile Include="Database\Character\Characters_quests.cs" />
+    <Compile Include="Database\Character\Characters_quest_inprogress.cs" />
     <Compile Include="Database\Character\Characters_socials.cs" />
     <Compile Include="Database\Character\Characters_tok.cs" />
     <Compile Include="Database\Character\Characters_ability.cs" />
