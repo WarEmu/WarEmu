@@ -177,6 +177,7 @@ namespace WorldServer
                 ItmInterface.Load(CharMgr.GetItemChar(_Info.CharacterId));
                 StsInterface.Load(CharMgr.GetCharacterInfoStats(_Info.CareerLine, _Value.Level));
                 QtsInterface.Load(this._Info.Quests);
+                QtsInterface.Load(this._Info.InProgressQuests);
                 TokInterface.Load(_Info.Toks);
                 SocInterface.Load(_Info.Socials);
                 AbtInterface.Load();
