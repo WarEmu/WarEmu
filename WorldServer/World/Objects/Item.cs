@@ -43,7 +43,7 @@ namespace WorldServer
     {
         // Créature ou Player
         public Object Owner;
-        public UInt32 _ModelId=0;
+        public UInt16 _ModelId=0;
         public UInt16 _SlotId=0;
         public UInt16 _Count=1;
         public UInt32 _EffectId;
@@ -155,7 +155,8 @@ namespace WorldServer
             if (Info == null)
                 return;
 
-            Out.WriteUInt32(Info.ModelId);
+            Out.WriteUInt16(Info.ModelId);
+            Out.Fill(0, 7);
             Out.WriteUInt16(Info.SlotId);
             Out.WriteByte(Info.Type);
             Out.WriteByte(Info.MinRank);
@@ -176,6 +177,7 @@ namespace WorldServer
             Out.WriteUInt16((UInt16)(Count > 0 ? Count : 1));
 
             Out.WriteUInt32(0);
+            Out.WriteUInt16(0);
 
             Out.WriteUInt32(Info.Skills);
             Out.WriteUInt16(Info.Dps > 0 ? Info.Dps : Info.Armor);
@@ -253,7 +255,7 @@ namespace WorldServer
             }
         }
 
-        public UInt32 ModelId
+        public UInt16 ModelId
         {
             get 
             { 

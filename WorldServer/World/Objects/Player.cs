@@ -228,7 +228,7 @@ namespace WorldServer
             TokInterface.SendAllToks();
             SendSkills();
             Health = TotalHealth;
-           // ItmInterface.SendAllItems(this);
+            ItmInterface.SendAllItems(this);
             AbtInterface.SendAbilities();
             
 

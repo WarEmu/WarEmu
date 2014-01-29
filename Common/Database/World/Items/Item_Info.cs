@@ -36,7 +36,7 @@ namespace Common
         private string _Description;
         private byte _Type;
         private byte _Race;
-        private uint _ModelId;
+        private UInt16 _ModelId;
         private UInt16 _SlotId;
         private byte _Rarity;
         private uint _Career;
@@ -68,7 +68,7 @@ namespace Common
         [DataElement()]
         public byte Race { get { return _Race; } set { _Race = value; } }
         [DataElement()]
-        public uint ModelId  { get { return _ModelId; } set { _ModelId = value; } }
+        public UInt16 ModelId { get { return _ModelId; } set { _ModelId = value; } }
         [DataElement()]
         public UInt16 SlotId { get { return _SlotId; } set { _SlotId = value; } }
         [DataElement()]
