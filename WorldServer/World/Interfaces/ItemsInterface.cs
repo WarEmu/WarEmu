@@ -458,7 +458,7 @@ namespace WorldServer
                     continue;
 
                 Out.WriteByte(0); // Effect
-                Out.WriteUInt16(Slot);
+                Out.WriteByte((byte)Slot);
                 Out.WriteUInt16((UInt16)(Items[Slot] != null ? Items[Slot].ModelId : 0));
             }
             Out.WriteByte(0);
