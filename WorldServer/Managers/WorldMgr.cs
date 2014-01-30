@@ -870,17 +870,18 @@ namespace WorldServer
             Log.Success("SendVendorPage", "Count=" + Count + ",Page=" + Page + ",ItmC=" + Vendors.Count);
 
             PacketOut Out = new PacketOut((byte)Opcodes.F_INIT_STORE);
+            Out.WriteByte(3);
             Out.WriteByte(0);
             Out.WriteByte(Page);
             Out.WriteByte(Count);
             Out.WriteByte((byte)(Page > 0 ? 0 : 1));
             Out.WriteByte(1);
-            Out.WriteByte(0);
+            Out.WriteUInt16(0);
 
             for (byte i = 0; i < Count; ++i)
             {
                 Out.WriteByte(i);
-                Out.WriteByte(3);
+                Out.WriteByte(3); // sometimes 1
                 Out.WriteUInt32(Vendors[i].Price);
                 Item.BuildItem(ref Out, null, Vendors[i].Info, 0, 1);
 
