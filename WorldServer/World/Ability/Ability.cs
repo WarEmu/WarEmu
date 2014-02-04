@@ -76,11 +76,27 @@ namespace WorldServer
 
         public void SendStartCasting(ushort TargetOID)
         {
-            PacketOut Out = new PacketOut((byte)Opcodes.F_UPDATE_STATE);
-            Out.WriteUInt16(TargetOID);
-            Out.WriteByte(0x1A);
-            Out.Fill(0, 7);
-            Caster.DispatchPacket(Out, true);
+            PacketOut Out1 = new PacketOut((byte)Opcodes.F_UPDATE_STATE);
+            Out1.WriteUInt16(TargetOID);
+            Out1.WriteByte(0x1A);
+            Out1.Fill(0, 7);
+            Caster.DispatchPacket(Out1, true);
+
+            if (Info.CastTime == 0)
+                return;
+
+            PacketOut Out2 = new PacketOut((byte)Opcodes.F_USE_ABILITY);
+            Out2.WriteUInt16(0);
+            Out2.WriteUInt16(Info.Entry);
+            Out2.WriteUInt16(Caster.Oid);
+            Out2.WriteByte(0x06);
+            Out2.WriteByte(0x10);
+            Out2.WriteUInt16(0x2273);
+            Out2.WriteUInt32(0x1010000);
+            Out2.WriteUInt16((ushort)this.Info.CastTime);
+            Out2.WriteByte(1);
+            Out2.Fill(0, 3);
+            Caster.GetPlayer().DispatchPacket(Out2, true);
         }
 
         public void SendSpellDamage(ushort TargetOID, UInt32 Damage)
@@ -99,7 +115,32 @@ namespace WorldServer
 
         public void SendAbilityDone(ushort TargetOID)
         {
-            // ???
+            Log.Success("Ability", "Send Done :" + Info.Entry);
+
+            Player player = this.Caster.GetPlayer();
+            PacketOut Out1 = new PacketOut((byte)Opcodes.F_USE_ABILITY);
+            Out1.WriteUInt16(0);
+            Out1.WriteUInt16(Info.Entry);
+            Out1.WriteUInt16(Caster.Oid);
+            Out1.WriteHexStringBytes("061022730601000001E601000000");
+            player.DispatchPacket(Out1, true);
+
+            PacketOut Out2 = new PacketOut((byte)Opcodes.F_USE_ABILITY);
+            Out2.WriteUInt16(0);
+            Out2.WriteUInt16(Info.Entry);
+            Out2.WriteUInt16(Caster.Oid);
+            Out2.WriteHexStringBytes("0610227302010000000001000000");
+            player.DispatchPacket(Out2, true);
+
+            PacketOut Out3 = new PacketOut((byte)Opcodes.F_SWITCH_ATTACK_MODE);
+            Out3.WriteByte(1);
+            Out3.Fill(0, 3);
+            player.SendPacket(Out3);
+
+            PacketOut Out4 = new PacketOut((byte)Opcodes.F_SET_ABILITY_TIMER);
+            Out4.WriteUInt16(Info.Entry);
+            Out4.Fill(0, 10);
+            player.SendPacket(Out4);
         }
     }
 }
