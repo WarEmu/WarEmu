@@ -679,7 +679,7 @@ namespace WorldServer
         public void SendRankUpdate(Player Plr)
         {
             PacketOut Out = new PacketOut((byte)Opcodes.F_PLAYER_RANK_UPDATE);
-            Out.WriteByte((byte)(Level-1));
+            Out.WriteByte((byte)(Level));
             Out.WriteByte(0x20);
             Out.WriteUInt16(Oid);
             if (Plr == null)
