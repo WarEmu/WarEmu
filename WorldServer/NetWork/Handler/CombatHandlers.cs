@@ -115,5 +115,16 @@ namespace WorldServer
 
             cclient.Plr.AbtInterface.StartCast(AbilityID);
         }
+
+        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_INTERRUPT, "F_INTERRUPT")]
+        static public void F_INTERRUPT(BaseClient client, PacketIn packet)
+        {
+            GameClient cclient = client as GameClient;
+
+            if (cclient.Plr == null)
+                return;
+
+            cclient.Plr.AbtInterface.StopCast();
+        }
     }
 }
