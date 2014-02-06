@@ -43,7 +43,7 @@ namespace WorldServer
     {
         // Créature ou Player
         public Object Owner;
-        public UInt16 _ModelId=0;
+        public UInt32 _ModelId=0;
         public UInt16 _SlotId=0;
         public UInt16 _Count=1;
         public UInt32 _EffectId;
@@ -155,7 +155,7 @@ namespace WorldServer
             if (Info == null)
                 return;
 
-            Out.WriteUInt16(Info.ModelId);
+            Out.WriteUInt16((ushort)Info.ModelId);
             Out.Fill(0, 7);
             Out.WriteUInt16(Info.SlotId);
             Out.WriteByte(Info.Type);
@@ -255,7 +255,7 @@ namespace WorldServer
             }
         }
 
-        public UInt16 ModelId
+        public UInt32 ModelId
         {
             get 
             { 
