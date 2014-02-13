@@ -127,8 +127,10 @@ namespace FrameWork
             {
                 string Texte = "[" + DateTime.Now.ToString("HH:mm:ss") + "] " + name + " : " + message;
 
+                Type isMono = Type.GetType("Mono.Runtime");
+                if (isMono == null)
+                    Console.BufferHeight = Console.WindowWidth - 20;
 
-                Console.BufferHeight = Console.WindowWidth - 20;
                 Console.ForegroundColor = Color;
                 Console.WriteLine(Texte);
                 Console.ForegroundColor = ConsoleColor.White;
