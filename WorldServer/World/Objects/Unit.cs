@@ -205,7 +205,7 @@ namespace WorldServer
         }
 
         public UInt16 ActionPoints = 0;
-        public UInt16 MaxActionPoints = 100;
+        public UInt16 MaxActionPoints = 250;
 
         public uint TotalHealth { get { return MaxHealth + BonusHealth; } }
         public byte PctHealth { get { return (byte)((Health * 100) / TotalHealth); } }
