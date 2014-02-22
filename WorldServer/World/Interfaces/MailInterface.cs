@@ -11,7 +11,7 @@ namespace WorldServer
 {
     public class MailInterface : BaseInterface
     {
-        List<Character_mail> _Mails = new List<Character_mail>();
+        IList<Character_mail> _Mails = new List<Character_mail>();
         UInt32 nextSend = 0;
         uint MAIL_PRICE = 30;
 
@@ -21,11 +21,15 @@ namespace WorldServer
 
         }
 
-        public void Load(Character_mail[] Mails)
+        public void Load(IList<Character_mail> Mails)
         {
             if (Mails != null)
+            {
                 foreach (Character_mail Mail in Mails)
+                {
                     _Mails.Add(Mail);
+                }
+            }
 
             base.Load();
             Log.Success("MailInterface", "Loaded " + _Mails.Count + " Mails of " + Obj.Oid);
@@ -120,14 +124,17 @@ namespace WorldServer
             }
 
             SendResult(MailResult.TEXT_MAIL_RESULT4);
-
-            //If player exists let them know they have mail.
-            if (Player.GetPlayer(Name) != null)
-                Player.GetPlayer(Name).MlInterface.AddMail(CMail);
-
             CharMgr.Database.AddObject(CMail);
 
-            SendMailBox();
+            //If player exists let them know they have mail.
+            Player mailToPlayer = Player.GetPlayer(Name);
+            if (mailToPlayer != null)
+            {
+                mailToPlayer.MlInterface.AddMail(CMail);
+                mailToPlayer.MlInterface.SendMailBox();
+            }
+
+            
             nextSend = (uint)TCPServer.GetTimeStamp() + 5;
         }
 
@@ -284,13 +291,6 @@ namespace WorldServer
             Out.WriteByte(0);
             Out.WriteByte(0);//item count
             GetPlayer().SendPacket(Out);
-
-            if (!Mail.Opened)
-            {
-                Mail.Opened = true;
-                SendMailBox();
-                SendMailCounts();
-            }
         }
 
         public void SendResult(GameData.MailResult Result)

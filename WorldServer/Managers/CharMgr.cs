@@ -481,5 +481,20 @@ namespace WorldServer
         }
 
         #endregion
+
+        #region CharacterMail
+        static public IList<Character_mail> GetCharMail(int characterId)
+        {
+            return Database.SelectObjects<Character_mail>(string.Format("CharacterId = {0}", characterId));
+        }
+        static public void SaveMail(Character_mail mailItem)
+        {
+            Database.SaveObject(mailItem);
+        }
+        static public void SaveMail(IList<Character_mail> mailItems)
+        {
+            foreach (var item in mailItems) { Database.SaveObject(item); }
+        }
+        #endregion
     }
 }

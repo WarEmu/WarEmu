@@ -49,6 +49,13 @@ namespace WorldServer
                             case 2:
                                 Log.Success("MailInterface", "Sending mail");
                                 Plr.MlInterface.SendMail(Mail);
+                                if (!Mail.Opened)
+                                {
+                                    Mail.Opened = true;
+                                    CharMgr.SaveMail(Mail);
+                                    Plr.MlInterface.SendMailCounts();
+                                    Plr.MlInterface.SendMailBox();
+                                }
                                 break;
                             case 3:
                                 //TODO
@@ -62,7 +69,7 @@ namespace WorldServer
                             case 5:
                                 packet.Skip(4);
                                 Mail.Opened = (packet.GetUint8() == 1);
-                                CharMgr.Database.SaveObject(Mail);
+                                CharMgr.SaveMail(Mail);
                                 Plr.MlInterface.SendMailCounts();
                                 Plr.MlInterface.SendMailBox();
                                 break;
@@ -75,11 +82,12 @@ namespace WorldServer
                                     return;
                                 Plr.AddMoney(Mail.Money);
                                 Mail.Money = 0;
-                                CharMgr.Database.SaveObject(Mail);
+                                CharMgr.SaveMail(Mail);
                                 Plr.MlInterface.SendMailUpdate(Mail);
                                 break;
                         }
-                    } break;
+                    }
+                    break;
             }
         }
     }
