@@ -109,7 +109,7 @@ namespace WorldServer
 
             for (byte i = 0; i < itemcounts; ++i)
             {
-                UInt16 itmslot = packet.GetUint8();
+                UInt16 itmslot = ByteOperations.ByteSwap.Swap(packet.GetUint16());
                 packet.Skip(2);
 
                 ByteOperations.ByteSwap.Swap(itmslot);
@@ -117,8 +117,8 @@ namespace WorldServer
                 Item itm = Plr.ItmInterface.GetItemInSlot(itmslot);
                 if (itm != null)
                 {
-                    //CMail._Items.Add(itm);
-                    Plr.ItmInterface.RemoveItem(itmslot);
+                    CMail.ItemsReqInfo.Add(itm.CharItem);
+                    Plr.ItmInterface.DeleteItem(itmslot, itm.CharItem.Counts, false);
                     itm.Owner = null;
                 }
 
@@ -171,7 +171,13 @@ namespace WorldServer
             Out.WriteUInt32(0);
 
             Out.WriteUInt32(Mail.Money);
-            Out.WriteUInt16(0); //Items size
+            Out.WriteUInt16((ushort)Mail.ItemsReqInfo.Count);
+            if(Mail.ItemsReqInfo.Count > 0)
+                Out.WriteByte(0);
+            foreach(Character_items item in Mail.ItemsReqInfo)
+            {
+                Out.WriteUInt32(item.ModelId);
+            }
         }
 
         public void SendMailCounts()
@@ -284,10 +290,15 @@ namespace WorldServer
             Out.WriteByte(0x0D);
             Out.WriteByte(0);
             BuildPreMail(Out, Mail);
-            Out.WriteByte((byte)(Mail.Content.Length + 1));
+            Out.WriteUInt16((ushort)(Mail.Content.Length + 1));
             Out.WriteStringBytes(Mail.Content);
             Out.WriteByte(0);
-            Out.WriteByte(0);//item count
+            Out.WriteByte((byte)Mail.ItemsReqInfo.Count);
+            foreach (Character_items item in Mail.ItemsReqInfo)
+            {
+                Item_Info Req = WorldMgr.GetItem_Info(item.Entry);
+                Item.BuildItem(ref Out, null, Req, 0, item.Counts);
+            }
             GetPlayer().SendPacket(Out);
         }
 

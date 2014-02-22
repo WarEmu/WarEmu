@@ -483,7 +483,6 @@ namespace WorldServer
         #endregion
 
         #region CharacterMail
-        static public Dictionary<int, Character_mail> CharacterMails;
         static public int MAX_MAIL_GUID = 1;
 
         static public int GenerateMailGUID()
@@ -495,23 +494,33 @@ namespace WorldServer
         {
             Log.Debug("WorldMgr", "Loading Character_mails...");
 
-            CharacterMails = new Dictionary<int, Character_mail>();
             IList<Character_mail> Mails = Database.SelectAllObjects<Character_mail>();
-
+            int count = 0;
             if (Mails != null)
                 foreach (Character_mail Mail in Mails)
                 {
-                    CharacterMails.Add(Mail.Guid, Mail);
                     if (Mail.Guid > MAX_MAIL_GUID)
                         MAX_MAIL_GUID = Mail.Guid;
+                    count++;
                 }
 
 
-            Log.Success("LoadMails", "Loaded " + CharacterMails.Count + " Character_mails");
+            Log.Success("LoadMails", "Loaded " + count + " Character_mails");
         }
         static public IList<Character_mail> GetCharMail(int characterId)
         {
-            return Database.SelectObjects<Character_mail>(string.Format("CharacterId = {0}", characterId));
+            IList<Character_mail> Mails = Database.SelectObjects<Character_mail>(string.Format("CharacterId = {0}", characterId));
+
+            if (Mails != null)
+                foreach (Character_mail Mail in Mails)
+                    foreach (uint Guid in Mail.ItemsReq)
+                    {
+                        Character_items Req = _Items[Guid];
+                        if (Req != null)
+                            Mail.ItemsReqInfo.Add(Req);
+                    }
+
+            return Mails;
         }
         static public void SaveMail(Character_mail mailItem)
         {

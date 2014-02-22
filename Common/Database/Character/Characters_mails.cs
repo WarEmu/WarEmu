@@ -97,12 +97,35 @@ namespace Common
         }
 
         [DataElement(AllowDbNull = false)]
-        public UInt16 Items
+        public string Items
         {
-            get { return _Items; }
-            set { _Items = value; Dirty = true; }
+            get
+            {
+                string Value = "";
+                foreach (Character_items Obj in ItemsReqInfo)
+                    Value += Obj.Guid + ";";
+                return Value;
+            }
+            set
+            {
+                if (value.Length <= 0)
+                    return;
+
+                string[] Objs = value.Split(';');
+
+                foreach (string Obj in Objs)
+                {
+                    if (Obj.Length <= 0)
+                        continue;
+
+                    uint Guid = uint.Parse(Obj);
+                    ItemsReq.Add(Guid);
+                }
+                Dirty = true;
+            }
         }
 
-        //public Dictionary<Item_Info, uint> Items = new Dictionary<Item_Info, uint>();
+        public List<uint> ItemsReq = new List<uint>();
+        public List<Character_items> ItemsReqInfo = new List<Character_items>();
     }
 }

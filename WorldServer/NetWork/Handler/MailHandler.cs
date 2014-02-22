@@ -21,7 +21,7 @@ namespace WorldServer
             Player Plr = cclient.Plr;
 
             byte Type = packet.GetUint8();
-            Log.Success("MailInterface", "Recieved " + Type);
+
             switch (Type)
             {
                 case 0: // Mailbox closed
@@ -46,9 +46,7 @@ namespace WorldServer
 
                         switch (Type)
                         {
-                            case 2:
-                                Log.Success("MailInterface", "Sending mail");
-                                Plr.MlInterface.SendMail(Mail);
+                            case 2:                              
                                 if (!Mail.Opened)
                                 {
                                     Mail.Opened = true;
@@ -56,6 +54,7 @@ namespace WorldServer
                                     Plr.MlInterface.SendMailCounts();
                                     Plr.MlInterface.SendMailBox();
                                 }
+                                Plr.MlInterface.SendMail(Mail);
                                 break;
                             case 3:
                                 //TODO
@@ -74,16 +73,47 @@ namespace WorldServer
                                 Plr.MlInterface.SendMailBox();
                                 break;
                             case 7:
-                                //Mail items are not yet implemented
-                                Plr.MlInterface.SendResult(GameData.MailResult.TEXT_MAIL_RESULT16);
-                                break;
-                            case 8:
-                                if (Mail.Money == 0)
+                                packet.Skip(4);
+                                byte itemnum = packet.GetUint8();
+                                if (Mail.ItemsReqInfo.Count < itemnum + 1)
                                     return;
-                                Plr.AddMoney(Mail.Money);
-                                Mail.Money = 0;
+
+                                UInt16 FreeSlot = Plr.ItmInterface.GetFreeInventorySlot();
+                                if (FreeSlot == 0)
+                                {
+                                    Plr.SendLocalizeString("", GameData.Localized_text.TEXT_OVERAGE_CANT_TAKE_ATTACHMENTS);
+                                    return;
+                                }
+
+                                Character_items item = Mail.ItemsReqInfo.ElementAt(itemnum);
+                                Plr.ItmInterface.CreateItem(item.Entry, item.Counts);
+                                Mail.ItemsReqInfo.Remove(item);
+
                                 CharMgr.SaveMail(Mail);
                                 Plr.MlInterface.SendMailUpdate(Mail);
+                                Plr.MlInterface.SendMail(Mail);
+                                break;
+                            case 8:
+                                if (Mail.Money > 0)
+                                {
+                                    Plr.AddMoney(Mail.Money);
+                                    Mail.Money = 0;
+                                }
+                                // Take as many items as you can before inventory is full
+                                foreach (Character_items curritem in Mail.ItemsReqInfo.ToArray())
+                                {
+                                    UInt16 Slot = Plr.ItmInterface.GetFreeInventorySlot();
+                                    if (Slot == 0)
+                                    {
+                                        Plr.SendLocalizeString("", GameData.Localized_text.TEXT_OVERAGE_CANT_TAKE_ATTACHMENTS);
+                                        break;
+                                    }
+                                    Plr.ItmInterface.CreateItem(curritem.Entry, curritem.Counts);
+                                    Mail.ItemsReqInfo.Remove(curritem);
+                                }
+                                CharMgr.SaveMail(Mail);
+                                Plr.MlInterface.SendMailUpdate(Mail);
+                                Plr.MlInterface.SendMail(Mail);
                                 break;
                         }
                     }

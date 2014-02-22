@@ -175,9 +175,9 @@ namespace WorldServer
             Out.WriteUInt32(Info.SellPrice);
 
             Out.WriteUInt16((UInt16)(Count > 0 ? Count : 1));
+            Out.WriteUInt16((UInt16)(Count > 0 ? Count : 1));
 
             Out.WriteUInt32(0);
-            Out.WriteUInt16(0);
 
             Out.WriteUInt32(Info.Skills);
             Out.WriteUInt16(Info.Dps > 0 ? Info.Dps : Info.Armor);
