@@ -182,7 +182,7 @@ namespace WorldServer
                 QtsInterface.Load(this._Info.InProgressQuests);
                 TokInterface.Load(_Info.Toks);
                 SocInterface.Load(_Info.Socials);
-                MlInterface.Load(_Info.Mails);
+                MlInterface.Load(CharMgr.GetCharMail(_Info.CharacterId));
                 AbtInterface.Load();
                 StsInterface.ApplyStats();
 

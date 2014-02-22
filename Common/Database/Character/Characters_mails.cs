@@ -12,7 +12,6 @@ namespace Common
     [Serializable]
     public class Character_mail : DataObject
     {
-
         private int _Guid;
         private int _CharacterId;
         private int _CharacterIdSender;
@@ -24,6 +23,8 @@ namespace Common
         private bool _Cr;
         private bool _Opened;
         private UInt16 _Items;
+
+        public Character_mail() : base() { }
 
         [PrimaryKey(AutoIncrement = true)]
         public int Guid
