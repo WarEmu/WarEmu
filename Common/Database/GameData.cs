@@ -2855,22 +2855,22 @@ namespace GameData
     public enum MailResult
     {
         TEXT_MAIL_UNK,
-        TEXT_MAIL_RESULT1, //	Le serveur de courrier est occupé à gérer votre demande actuelle.
-        TEXT_MAIL_RESULT2, //	Vous êtes trop loin pour utiliser cette Boîte aux Lettres.
-        TEXT_MAIL_RESULT3, //	Le serveur de courrier n’a pas répondu à votre demande d’en-têtes.
-        TEXT_MAIL_RESULT4, //	Courrier envoyé.
-        TEXT_MAIL_RESULT5, //	ECHEC d’envoi du courrier. Pas de réponse du serveur.
-        TEXT_MAIL_RESULT6, //	ECHEC de l’envoi. Vous devez attendre 5 secondes entre chaque envoi.
-        TEXT_MAIL_RESULT7, //	Ce destinataire n’existe pas dans votre royaume.
-        TEXT_MAIL_RESULT8, //	Vous n’avez pas assez d’argent pour cet envoi.
-        TEXT_MAIL_RESULT9, //	Vous ne pouvez pas envoyer cette pièce jointe par courrier.
-        TEXT_MAIL_RESULT10, //	Ce message a bien été renvoyé.
-        TEXT_MAIL_RESULT11, //	Echec du renvoi de message.
-        TEXT_MAIL_RESULT12, //	Message supprimé.
-        TEXT_MAIL_RESULT13, //	Echec de la suppression de message.
-        TEXT_MAIL_RESULT14, //	Echec de l’ouverture de message. Réessayez plus tard.
-        TEXT_MAIL_RESULT15, //	Echec du marquage lu/non lu. Serveur occupé.
-        TEXT_MAIL_RESULT16, //	Echec d’insertion de pièce jointe.
+        TEXT_MAIL_RESULT1, //	The Mail Server is busy processing your current request.
+        TEXT_MAIL_RESULT2, //	You are too far away to use that mailbox.
+        TEXT_MAIL_RESULT3, //	Mail Server did not respond to the Get Headers request.
+        TEXT_MAIL_RESULT4, //	Mail Sent Successfully.
+        TEXT_MAIL_RESULT5, //	Send mail FAILED. Mail Server did not respond.
+        TEXT_MAIL_RESULT6, //	Send mail FAILED. You must wait 5 seconds between sending messages.
+        TEXT_MAIL_RESULT7, //	That recipient does not exist within your realm.
+        TEXT_MAIL_RESULT8, //	You do not have enough money to send that.
+        TEXT_MAIL_RESULT9, //	You may not mail that attached item.
+        TEXT_MAIL_RESULT10, //	The message was returned successfully.
+        TEXT_MAIL_RESULT11, //	Returning the message failed.
+        TEXT_MAIL_RESULT12, //	Message was successfully deleted.
+        TEXT_MAIL_RESULT13, //	Failed to delete the message.
+        TEXT_MAIL_RESULT14, //	Failed to open Message. Try again later.
+        TEXT_MAIL_RESULT15, //	Failed to set read/unread flag. Server Busy.
+        TEXT_MAIL_RESULT16, //	Failed to take attachment.
     };
 
     static public class GameData

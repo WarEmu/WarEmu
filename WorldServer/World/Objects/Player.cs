@@ -120,6 +120,7 @@ namespace WorldServer
 
         public SocialInterface SocInterface;
         public TokInterface TokInterface;
+        public MailInterface MlInterface;
 
         public int CharacterId
         {
@@ -157,6 +158,7 @@ namespace WorldServer
             EvtInterface = EventInterface.GetEventInterface((uint)_Info.CharacterId);
             SocInterface = new SocialInterface(this);
             TokInterface = new TokInterface(this);
+            MlInterface = new MailInterface(this);
         }
 
         ~Player()
@@ -180,6 +182,7 @@ namespace WorldServer
                 QtsInterface.Load(this._Info.InProgressQuests);
                 TokInterface.Load(_Info.Toks);
                 SocInterface.Load(_Info.Socials);
+                MlInterface.Load(_Info.Mails);
                 AbtInterface.Load();
                 StsInterface.ApplyStats();
 
@@ -230,12 +233,9 @@ namespace WorldServer
             Health = TotalHealth;
             ItmInterface.SendAllItems(this);
             AbtInterface.SendAbilities();
-            
+            MlInterface.SendMailCounts();
 
-
-
-
-           PacketOut Out = new PacketOut((byte)Opcodes.F_CHARACTER_INFO);
+            PacketOut Out = new PacketOut((byte)Opcodes.F_CHARACTER_INFO);
             Out.WriteByte(1);
             Out.WriteByte(1);
             Out.WriteUInt16(0x300);
@@ -247,9 +247,6 @@ namespace WorldServer
 
             SendInitComplete();
             SocInterface.SendFriends();
-            
-            
-
         }
         public override void Update()
         {

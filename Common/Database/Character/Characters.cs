@@ -166,5 +166,8 @@ namespace Common
 
         [Relation(LocalField = "CharacterId", RemoteField = "CharacterId", AutoLoad = true, AutoDelete = true)]
         public Character_quest_inprogress[] InProgressQuests;
+
+        [Relation(LocalField = "CharacterId", RemoteField = "CharacterId", AutoLoad = true, AutoDelete = true)]
+        public Character_mail[] Mails;
     }
 }

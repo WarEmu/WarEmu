@@ -91,6 +91,11 @@ namespace WorldServer
                 Plr.QtsInterface.HandleEvent(Objective_Type.QUEST_USE_GO, Spawn.Entry, 1);
             }
 
+            if (Spawn.Proto.Name == "Mailbox") // Mailbox
+            {
+                Plr.MlInterface.SendMailBox();
+            }
+
             if (Spawn.Proto.TokUnlock != 0)
                 Plr.TokInterface.AddTok(Info.Entry);
 
