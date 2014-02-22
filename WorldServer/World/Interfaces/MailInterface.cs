@@ -93,6 +93,7 @@ namespace WorldServer
 
             // Make a Mail
             Character_mail CMail = new Character_mail();
+            CMail.Guid = CharMgr.GenerateMailGUID();
             CMail.CharacterId = Receiver.CharacterId;
             CMail.CharacterIdSender = Plr._Info.CharacterId;
             CMail.SenderName = Plr._Info.Name;
@@ -129,10 +130,7 @@ namespace WorldServer
             //If player exists let them know they have mail.
             Player mailToPlayer = Player.GetPlayer(Name);
             if (mailToPlayer != null)
-            {
                 mailToPlayer.MlInterface.AddMail(CMail);
-                mailToPlayer.MlInterface.SendMailBox();
-            }
 
             
             nextSend = (uint)TCPServer.GetTimeStamp() + 5;

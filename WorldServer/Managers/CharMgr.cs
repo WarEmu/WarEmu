@@ -483,6 +483,32 @@ namespace WorldServer
         #endregion
 
         #region CharacterMail
+        static public Dictionary<int, Character_mail> CharacterMails;
+        static public int MAX_MAIL_GUID = 1;
+
+        static public int GenerateMailGUID()
+        {
+            return System.Threading.Interlocked.Increment(ref MAX_MAIL_GUID);
+        }
+        [LoadingFunction(true)]
+        static public void LoadMails()
+        {
+            Log.Debug("WorldMgr", "Loading Character_mails...");
+
+            CharacterMails = new Dictionary<int, Character_mail>();
+            IList<Character_mail> Mails = Database.SelectAllObjects<Character_mail>();
+
+            if (Mails != null)
+                foreach (Character_mail Mail in Mails)
+                {
+                    CharacterMails.Add(Mail.Guid, Mail);
+                    if (Mail.Guid > MAX_MAIL_GUID)
+                        MAX_MAIL_GUID = Mail.Guid;
+                }
+
+
+            Log.Success("LoadMails", "Loaded " + CharacterMails.Count + " Character_mails");
+        }
         static public IList<Character_mail> GetCharMail(int characterId)
         {
             return Database.SelectObjects<Character_mail>(string.Format("CharacterId = {0}", characterId));
