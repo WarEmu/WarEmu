@@ -174,6 +174,9 @@ namespace WorldServer
             Out.WriteUInt16((ushort)Mail.ItemsReqInfo.Count);
             if(Mail.ItemsReqInfo.Count > 0)
                 Out.WriteByte(0);
+            if(Mail.ItemsReqInfo.Count > 8)
+                Out.WriteByte(0);
+                
             foreach(Character_items item in Mail.ItemsReqInfo)
             {
                 Out.WriteUInt32(item.ModelId);
