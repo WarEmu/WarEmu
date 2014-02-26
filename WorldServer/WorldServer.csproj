@@ -82,9 +82,10 @@
     <Compile Include="NetWork\Handler\AuthentificationHandlers.cs" />
     <Compile Include="NetWork\Handler\CharacterHandlers.cs" />
     <Compile Include="NetWork\Handler\CombatHandlers.cs" />
+    <Compile Include="NetWork\Handler\GroupHandlers.cs" />
     <Compile Include="NetWork\Handler\InterfaceHandlers.cs" />
     <Compile Include="NetWork\Handler\InventoryHandlers.cs" />
-    <Compile Include="NetWork\Handler\MailHandler.cs" />
+    <Compile Include="NetWork\Handler\MailHandlers.cs" />
     <Compile Include="NetWork\Handler\MovementHandlers.cs" />
     <Compile Include="NetWork\Handler\QuestHandlers.cs" />
     <Compile Include="NetWork\Handler\SocialHandlers.cs" />
@@ -104,6 +105,7 @@
     <Compile Include="World\Interfaces\CombatInterface.cs" />
     <Compile Include="World\Interfaces\EventInterface.cs" />
     <Compile Include="World\Interfaces\MailInterface.cs" />
+    <Compile Include="World\Objects\Group.cs" />
     <Compile Include="World\Objects\Item.cs" />
     <Compile Include="World\Interfaces\ItemsInterface.cs" />
     <Compile Include="World\Interfaces\MovementInterface.cs" />

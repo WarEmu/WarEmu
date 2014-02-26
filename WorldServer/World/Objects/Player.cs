@@ -255,6 +255,11 @@ namespace WorldServer
                 Dispose();
                 return;
             }
+
+            if (Invitation != null)
+                if (Invitation.Expire <= TCPManager.GetTimeStamp())
+                    Invitation.DeclineInvitation();
+
             base.Update();
             UpdatePackets();
         }
@@ -934,5 +939,18 @@ namespace WorldServer
 
         #endregion
 
+        #region Group
+
+        private Group _Group;
+        public Group GetGroup() { return _Group; }
+        public void SetGroup(Group group)
+        {
+            _Group = group;
+            if (group != null)
+                group.AddMember(this);
+        }
+        public GroupInvitation Invitation;
+
+        #endregion
     }
 }

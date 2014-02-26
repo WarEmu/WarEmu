@@ -131,10 +131,10 @@ namespace WorldServer
             new CommandHandler("/openpartynote", null, null ),
             new CommandHandler("/lfpnote", null, null ),
             new CommandHandler("/partysay", null, null ),
-            new CommandHandler("/p", null, null),
+            new CommandHandler("/p", PlayerParty, null),
             new CommandHandler("/partyjoin", null, null ),
             new CommandHandler("/partyinvite", null, null ),
-            new CommandHandler("/invite", null , null),
+            new CommandHandler("/invite", GroupInvite , null),
             new CommandHandler("/partyinviteopen", null, null ),
             new CommandHandler("/oinvite", null, null ),
             new CommandHandler("/partyremove", null, null ),
@@ -301,6 +301,13 @@ namespace WorldServer
             }
         }
         static public void PlayerShout(Player Plr, string Text) { Plr.Say(Text, SystemData.ChatLogFilters.CHATLOGFILTERS_SHOUT); }
+        static public void PlayerParty(Player Plr, string Text)
+        {
+            if (Plr.GetGroup() == null)
+                return;
+
+            Plr.GetGroup().SendMessageToGroup(Plr, Text);
+        }
 
         #endregion
 
@@ -315,6 +322,33 @@ namespace WorldServer
 
         static public void SocialAnon(Player Plr, string Text) { Plr.SocInterface.Anon = !Plr.SocInterface.Anon; }
         static public void SocialHide(Player Plr, string Text) { Plr.SocInterface.Hide = !Plr.SocInterface.Hide; }
+
+        #endregion
+
+        #region Group
+
+        static public void GroupInvite(Player Plr, string Name)
+        {
+            if (Plr.GetGroup() != null && Plr.GetGroup().IsFull())
+            {
+                Plr.SendLocalizeString("", GameData.Localized_text.TEXT_PARTY_IS_FULL);
+                return;
+            }
+
+            Player Receiver = Player.GetPlayer(Name);
+            if (Receiver == null)
+                Plr.SendLocalizeString("", GameData.Localized_text.TEXT_SN_LISTS_ERR_PLAYER_NOT_FOUND);
+            else if (Receiver.Name == Plr.Name)
+                Plr.SendLocalizeString("", GameData.Localized_text.TEXT_GROUP_INVITE_ERR_SELF);
+            else if (Receiver.Realm != Plr.Realm)
+                Plr.SendLocalizeString("", GameData.Localized_text.TEXT_GROUP_INVITE_ERR_ENEMY);
+            else if (Receiver.GetGroup() != null)
+                Plr.SendLocalizeString("", GameData.Localized_text.TEXT_BG_PLAYER_IN_ANOTHER_GROUP);
+            else if (Receiver.Invitation != null)
+                Plr.SendLocalizeString("", GameData.Localized_text.TEXT_BG_PLAYER_PENDING_ANOTHER);
+            else
+                new GroupInvitation(Plr, Receiver);
+        }
 
         #endregion
 
