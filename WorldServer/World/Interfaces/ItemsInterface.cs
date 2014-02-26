@@ -358,7 +358,6 @@ namespace WorldServer
             Out.WriteByte((byte)GameData.Stats.STATS_COUNT);
             Out.WriteByte(GetAttackSpeed());
             Out.WriteUInt16(GetDamage());
-            Out.WriteUInt16(GetEquipedArmor());
         }
         public void SendMaxInventory(Player Plr) // 1.3.5
         {
