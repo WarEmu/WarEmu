@@ -164,6 +164,9 @@ namespace WorldServer
         {
             if (Plr == null)
                 return;
+           
+            if(Members.Contains(Plr))
+                return;
 
             Log.Debug("Group", "AddMember " + Plr.Name);
 
@@ -176,6 +179,8 @@ namespace WorldServer
 
             if (Plr != Leader)
                 SendWhosLeader(Plr);
+
+            SendNewMember(Plr);
 
             Update();
         }
