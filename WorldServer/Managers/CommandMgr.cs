@@ -276,7 +276,7 @@ namespace WorldServer
 
         #region Functions
 
-        static public void PlayerQuit(Player Plr,string Text) { if(!Plr.Leaving) Plr.Quit(); }
+        static public void PlayerQuit(Player Plr,string Text) { if(!Plr.Leaving) Plr.Quit(true); }
         static public void PlayerExit(Player Plr, string Text) { Plr.DisconnectTime = 0; Plr.Quit(); }
 
         #region Tchat

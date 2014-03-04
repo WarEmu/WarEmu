@@ -211,7 +211,7 @@ namespace WorldServer
             if (_Client != null)
             {
                 _Client.Plr = null;
-                _Client.Disconnect();
+                _Client.State = (int)eClientState.CharScreen;
             }
 
             base.Dispose();
@@ -659,10 +659,12 @@ namespace WorldServer
         }
         public void SendLeave()
         {
+            //SendPacket would not send this packet as Update would
+            //not be called after the player was removed from the region
             PacketOut Out = new PacketOut((byte)Opcodes.F_PLAYER_QUIT);
-            Out.WriteByte(0); // 0=déco, 1=Ejecté du serveur
-            Out.WriteByte(1);
-            SendPacket(Out);
+            Out.WriteByte(0);
+            Out.WriteByte(CloseClient ? (byte)0 : (byte)1);
+            Client.SendTCP(Out);
         }
         public void SendLevelUp(Dictionary<byte, UInt16> Diff)
         {
@@ -774,6 +776,7 @@ namespace WorldServer
 
         public int  DisconnectTime= DISCONNECT_TIME; // 20 Secondes = 20000
         public bool Leaving = false;
+        public bool CloseClient;
         public void StopQuit()
         {
             EvtInterface.RemoveEvent(Quit);
@@ -787,6 +790,10 @@ namespace WorldServer
             return true;
         }
         public void Quit()
+        {
+            Quit(false);
+        }
+        public void Quit(bool CloseClient)
         {
             Log.Success("Player", "Quit");
 
@@ -806,6 +813,7 @@ namespace WorldServer
 
             SendLocalizeString("" + DisconnectTime / 1000, GameData.Localized_text.TEXT_YOU_WILL_LOG_OUT_IN_X_SECONDS);
             DisconnectTime -= 5000;
+            this.CloseClient = CloseClient;
 
             if (DisconnectTime < 0 || GmLevel >= 1) // Leave
                 Dispose();
