@@ -64,6 +64,12 @@ namespace WorldServer
             new GmCommandHandler("remove",NpcRemove, null, 0, 1, "Delete the target (0=World,1=Database)"),
         };
 
+        static public List<GmCommandHandler> GoCommands = new List<GmCommandHandler>()
+        {
+            new GmCommandHandler("spawn",GoSpawn, null, 0, 1, "Spawn an Go"),
+            new GmCommandHandler("remove",GoRemove, null, 0, 1, "Delete the target (0=World,1=Database)"),
+        };
+
         static public List<GmCommandHandler> RespawnCommands = new List<GmCommandHandler>()
         {
             new GmCommandHandler("add",RespawnAdd, null, 0, 0, "Add respawn point to your position"),
@@ -89,6 +95,7 @@ namespace WorldServer
             new GmCommandHandler("move",Move, null, 3, 0, "move target to my position"),
             new GmCommandHandler("chapter",null, ChapterCommands, 3, 0, "All Chapter commands"),
             new GmCommandHandler("npc",null, NpcCommands, 3, 0, "All Npc commands"),
+            new GmCommandHandler("go",null, GoCommands, 3, 0, "All Go commands"),
             new GmCommandHandler("revive",Revive, null, 3, 0, "Rez target Unit"),
             new GmCommandHandler("respawn",null, RespawnCommands, 3, 0, "Respawn points"),
             new GmCommandHandler("teleport",null, TeleportCommands, 3, 0, "Teleport commands"),
@@ -501,6 +508,55 @@ namespace WorldServer
 
             if (Database > 0)
                 WorldMgr.Database.DeleteObject(Obj.GetCreature().Spawn);
+
+            return true;
+        }
+
+        #endregion
+
+        #region Go
+
+        static public bool GoSpawn(Player Plr, ref List<string> Values)
+        {
+            int Entry = GetInt(ref Values);
+
+            GameObject_proto Proto = WorldMgr.GetGameObjectProto((uint)Entry);
+            if (Proto == null)
+            {
+                Plr.SendMessage(0, "Server", "Invalid go entry(" + Entry + ")", SystemData.ChatLogFilters.CHATLOGFILTERS_SHOUT);
+                return false;
+            }
+
+            Plr.CalcWorldPositions();
+
+            GameObject_spawn Spawn = new GameObject_spawn();
+            Spawn.Guid = (uint)WorldMgr.GenerateSpawnGUID();
+            Spawn.BuildFromProto(Proto);
+            Spawn.WorldO = Plr._Value.WorldO;
+            Spawn.WorldY = Plr._Value.WorldY;
+            Spawn.WorldZ = Plr._Value.WorldZ;
+            Spawn.WorldX = Plr._Value.WorldX;
+            Spawn.ZoneId = Plr.Zone.ZoneId;
+
+            WorldMgr.Database.AddObject(Spawn);
+
+            Plr.Region.CreateGameObject(Spawn);
+
+            return true;
+        }
+
+        static public bool GoRemove(Player Plr, ref List<string> Values)
+        {
+            Object Obj = GetObjectTarget(Plr);
+            if (!Obj.IsGameObject())
+                return false;
+
+            int Database = GetInt(ref Values);
+
+            Obj.RemoveFromWorld();
+
+            if (Database > 0)
+                WorldMgr.Database.DeleteObject(Obj.GetGameObject().Spawn);
 
             return true;
         }

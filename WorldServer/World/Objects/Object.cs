@@ -116,6 +116,7 @@ namespace WorldServer
         public Unit GetUnit() { return this as Unit; }
         public Player GetPlayer() { return this as Player; }
         public Creature GetCreature() { return this as Creature; }
+        public GameObject GetGameObject() { return this as GameObject; }
 
         #endregion
 

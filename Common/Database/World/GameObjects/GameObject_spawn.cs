@@ -54,5 +54,12 @@ namespace Common
 
         [DataElement()]
         public uint DisplayID;
+
+        public void BuildFromProto(GameObject_proto Proto)
+        {
+            this.Proto = Proto;
+            Entry = Proto.Entry;
+            DisplayID = Proto.DisplayID;
+        }
     }
 }
