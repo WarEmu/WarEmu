@@ -349,7 +349,7 @@ namespace WorldServer
             string Pos = "Px="+Plr.X+",Py="+Plr.Y+",Pz="+Plr.Z;
             Pos+=",Wx="+Plr._Value.WorldX +",Wy="+Plr._Value.WorldY;
             Pos += ",Ox=" + Plr.XOffset + ",Oy=" + Plr.YOffset;
-            Pos += ",Wh=" + Plr._Value.WorldO + ",Ph=" + Plr.Heading +",HeightMap="+HeightMapMgr.GetHeight(Plr.Zone.ZoneId,Plr.X,Plr.Y);
+            Pos += ",Wh=" + Plr._Value.WorldO + ",Ph=" + Plr.Heading + ",HeightMap=" + HeightMapMgr.GetHeight(Plr.Zone.ZoneId, Plr._Value.WorldX, Plr._Value.WorldY);
             if (Obj != null)
                 Pos += ",Dist=" + Plr.GetDistanceTo(Obj);
             Plr.SendMessage(0, "", Pos, SystemData.ChatLogFilters.CHATLOGFILTERS_EMOTE);

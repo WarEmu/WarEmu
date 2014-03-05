@@ -25,13 +25,34 @@ namespace WorldServer
 
         public int GetHeight(int PinX, int PinY)
         {
+            FrameWork.Log.Success("pin x pin y ", " = " + PinX + "  " + PinY);
+
+
+            if (this.ZoneID == 130)
+            {
+                PinX = PinX - 327684;
+                PinY = PinY - 327684;
+            }
+            else if (this.ZoneID == 100)
+            {
+                PinX = PinX - 819220;
+                PinY = PinY - 819220;
+            }
+
+
+            FrameWork.Log.Success("Worldmap pin x pin y - 327780", " = " + PinX + "  " + PinY);
+            
             Load();
 
             if (Offset == null || Terrain == null)
                 return -1;
 
+
+
             PinX = (int)((float)PinX / 64f);
             PinY = (int)((float)PinY / 64f);
+
+            FrameWork.Log.Success("pin x pin y / 64 offset", " = " + PinX+"  "+PinY);
 
             if (PinX < 0 || PinX > Offset.Width || PinX > Terrain.Width)
                 return -1;
@@ -45,12 +66,18 @@ namespace WorldServer
             {
                 {
                     Color iColor = Offset.GetPixel(PinX, PinY);
+                    FrameWork.Log.Success("icolor offset", " = " + iColor.R);
                     fZValue += iColor.R * 31; // 0 -> 30
+                    FrameWork.Log.Success("fZValue", " = " + fZValue);
+                    
                 }
 
                 {
                     Color iColor = Terrain.GetPixel(PinX, PinY);
+                    FrameWork.Log.Success("icolor terrain", " = " + iColor.R);
                     fZValue += iColor.R;
+                    FrameWork.Log.Success("fZValue", " = " + fZValue);
+                    
                 }
             }
             catch (Exception e)
@@ -58,9 +85,10 @@ namespace WorldServer
                 FrameWork.Log.Error("HeightMap", e.ToString());
             }
 
-            fZValue *= 16;
-
-            return (int)fZValue-30;
+            fZValue *= 8;  // was 16
+            FrameWork.Log.Success("fZValue", " = " + fZValue);
+            FrameWork.Log.Success("fZValue", " = " +(fZValue - 30));
+            return (int)fZValue + 15;    // removed -30
         }
 
         public void Load()
