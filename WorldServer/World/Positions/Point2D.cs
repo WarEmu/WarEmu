@@ -179,12 +179,22 @@ namespace WorldServer
 		{
 			double dx = (double) X - point.X;
 			double dy = (double) Y - point.Y;
-            double Range = Math.Sqrt(dx * dx + dy * dy) / 13.2F;
-            if (Range < 15)
-                Range /= 2;
+            double Range = Math.Sqrt(dx * dx + dy * dy);
 
-            return (int)(Range);
+            return (int)(Range / Point2D.Lerp(36.0, 13.5, Point2D.Clamp(Range, 900.0)));
 		}
+
+        public static double Clamp(double value, double max)
+        {
+            if (value > max)
+                value = max;
+            return value / max;
+        }
+
+        public static double Lerp(double value1, double value2, double amount)
+        {
+            return value1 + (value2 - value1) * amount;
+        }
 
 		public virtual void Clear()
 		{

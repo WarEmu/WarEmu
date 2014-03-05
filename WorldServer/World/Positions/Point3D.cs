@@ -92,9 +92,9 @@ namespace WorldServer
         {
             double dx = (double)X - point.X;
             double dy = (double)Y - point.Y;
-            double dz = (double)Z/2 - point.Z/2;
+            double Range = Math.Sqrt(dx * dx + dy * dy);
 
-            return (int)(Math.Sqrt(dx * dx + dy * dy + dz * dz) /13.2f);
+            return (int)(Range / Point2D.Lerp(36.0, 13.5, Point2D.Clamp(Range, 900.0)));
         }
 
         /// <summary>

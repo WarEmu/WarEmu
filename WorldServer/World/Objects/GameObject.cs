@@ -42,7 +42,7 @@ namespace WorldServer
 
             X = Zone.CalculPin((uint)(Spawn.WorldX), true);
             Y = Zone.CalculPin((uint)(Spawn.WorldY), false);
-            Z = (ushort)(Spawn.WorldZ * 2);
+            Z = (ushort)(Spawn.WorldZ);
 
             Heading = (ushort)Spawn.WorldO;
             SetOffset((ushort)(Spawn.WorldX >> 12), (ushort)(Spawn.WorldY >> 12));
