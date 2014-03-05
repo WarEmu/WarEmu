@@ -200,7 +200,6 @@ namespace WorldServer
         {
             RemovePlayer(this);
 
-            SendLeave();
             StopQuit();
 
             EvtInterface.Notify("Leave", this, null);
@@ -215,6 +214,10 @@ namespace WorldServer
             }
 
             base.Dispose();
+
+            // This moved here so that the packet would be sent straight away
+            // instead of being added to _PacketOut list.
+            SendLeave();
         }
 
         public void StartInit()
@@ -659,12 +662,10 @@ namespace WorldServer
         }
         public void SendLeave()
         {
-            //SendPacket would not send this packet as Update would
-            //not be called after the player was removed from the region
             PacketOut Out = new PacketOut((byte)Opcodes.F_PLAYER_QUIT);
             Out.WriteByte(0);
             Out.WriteByte(CloseClient ? (byte)0 : (byte)1);
-            Client.SendTCP(Out);
+            SendPacket(Out);
         }
         public void SendLevelUp(Dictionary<byte, UInt16> Diff)
         {
