@@ -48,6 +48,17 @@ namespace LauncherServer
         {
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(onError);
 
+            Log.Texte("", "------------------- Launcher Server -------------------", ConsoleColor.DarkRed);
+            Log.Texte("", " █     █░ ▄▄▄       ██▀███  ▓█████  ███▄ ▄███▓ █    ██ ", ConsoleColor.Red);
+            Log.Texte("", "▓█░ █ ░█░▒████▄    ▓██ ▒ ██▒▓█   ▀ ▓██▒▀█▀ ██▒ ██  ▓██▒", ConsoleColor.Red);
+            Log.Texte("", "▒█░ █ ░█ ▒██  ▀█▄  ▓██ ░▄█ ▒▒███   ▓██    ▓██░▓██  ▒██░", ConsoleColor.Red);
+            Log.Texte("", "░█░ █ ░█ ░██▄▄▄▄██ ▒██▀▀█▄  ▒▓█  ▄ ▒██    ▒██ ▓▓█  ░██░", ConsoleColor.Red);
+            Log.Texte("", "░░██▒██▓  ▓█   ▓██▒░██▓ ▒██▒░▒████▒▒██▒   ░██▒▒▒█████▓ ", ConsoleColor.Red);
+            Log.Texte("", "░ ▓░▒ ▒   ▒▒   ▓▒█░░ ▒▓ ░▒▓░░░ ▒░ ░░ ▒░   ░  ░░▒▓▒ ▒ ▒ ", ConsoleColor.Red);
+            Log.Texte("", "  ▒ ░ ░    ▒   ▒▒ ░  ░▒ ░ ▒░ ░ ░  ░░  ░      ░░░▒░ ░ ░ ", ConsoleColor.Red);
+            Log.Texte("", "  ░   ░    ░   ▒     ░░   ░    ░   ░      ░    ░░░ ░ ░ ", ConsoleColor.Red);
+            Log.Texte("", "    ░          ░  ░   ░        ░  ░       ░      ░    ", ConsoleColor.Red);
+            Log.Texte("", "-------------------http://WarEmu.com-------------------", ConsoleColor.DarkRed);
 
             // Loading all configs files
             ConfigMgr.LoadConfigs();
