@@ -70,13 +70,18 @@ namespace WorldServer
             UInt16 Y = packet.GetUint16R();
             byte Unk1 = packet.GetUint8();
             UInt16 Z = packet.GetUint16R();
-            //byte Unk2 = packet.GetUint8();
+            byte zmod = packet.GetUint8();
+
+            int z_temp = Z;
 
             Heading /= 8;
             X /= 2;
             Y /= 2;
-            Z /= 2;
 
+
+           if (zmod != 0 && zmod != 97 && zmod != 113 && zmod != 99)
+                z_temp += 65535;
+ 
             if (CombatByte >= 50 && CombatByte < 0x92 || CombatByte == 0xDF)
             {
                 if (Plr.LastCX != 0 && Plr.LastCY != 0)
@@ -98,8 +103,17 @@ namespace WorldServer
                 X = Plr.Zone.CalculCombat(X, Plr.XOffset, true);
                 Y = Plr.Zone.CalculCombat(Y, Plr.YOffset, false);
                 Heading /= 2;
-                Z += 32768;
-                Z /= 4;
+
+               
+                z_temp/= 16;
+               
+                // combat offset might need somemaps added didnt test all
+
+                if (Plr._ZoneMgr.ZoneId == 161 || Plr._ZoneMgr.ZoneId == 162)
+                    z_temp += 12288;
+                else
+                    z_temp += 4096; 
+  
             }
             else
             {
@@ -122,12 +136,11 @@ namespace WorldServer
 
                 X = Plr.Zone.CalculPin(X, Plr.XOffset, true);
                 Y = Plr.Zone.CalculPin(Y, Plr.YOffset, false);
-               
+                z_temp /= 4;
+
             }
 
-            Z /= 2;
-
-            Plr.SetPosition(X, Y, Z, Heading);
+            Plr.SetPosition(X, Y, (UInt16)z_temp, Heading);
         }
 
         [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_DUMP_STATICS, "onDumpStatics")]

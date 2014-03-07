@@ -188,8 +188,6 @@ namespace WorldServer
             WorldPosition.X = (int)((int)XZone + ((int)((int)x) & 0x00000FFF));
             WorldPosition.Y = (int)((int)YZone + ((int)((int)y) & 0x00000FFF));
             WorldPosition.Z = Z ;
-      //      if (ZoneID == 161)
-       //         WorldPosition.Z = (32768 + Z);
 
             return WorldPosition;
         }
