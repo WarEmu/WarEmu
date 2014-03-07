@@ -343,12 +343,8 @@ namespace WorldServer
 
         static public bool Gps(Player Plr, ref List<string> Values)
         {
-            FrameWork.Log.Success("player hight", " = " + Plr._Value.WorldZ);
-
             Plr.CalcWorldPositions();
             Object Obj = Plr.CbtInterface.GetTarget();
-
-             
 
             string Pos = "Px="+Plr.X+",Py="+Plr.Y+",Pz="+Plr.Z;
             Pos+=",Wx="+Plr._Value.WorldX +",Wy="+Plr._Value.WorldY+",Wz="+Plr._Value.WorldZ;
