@@ -25,9 +25,6 @@ namespace WorldServer
 
         public int GetHeight(int PinX, int PinY)
         {
-            FrameWork.Log.Success("pin x pin y ", " = " + PinX + "  " + PinY);
-
-
             if (this.ZoneID == 130)
             {
                 PinX = PinX - 327684;
@@ -39,9 +36,6 @@ namespace WorldServer
                 PinY = PinY - 819220;
             }
 
-
-            FrameWork.Log.Success("Worldmap pin x pin y - 327780", " = " + PinX + "  " + PinY);
-            
             Load();
 
             if (Offset == null || Terrain == null)
@@ -51,8 +45,6 @@ namespace WorldServer
 
             PinX = (int)((float)PinX / 64f);
             PinY = (int)((float)PinY / 64f);
-
-            FrameWork.Log.Success("pin x pin y / 64 offset", " = " + PinX+"  "+PinY);
 
             if (PinX < 0 || PinX > Offset.Width || PinX > Terrain.Width)
                 return -1;
@@ -66,18 +58,12 @@ namespace WorldServer
             {
                 {
                     Color iColor = Offset.GetPixel(PinX, PinY);
-                    FrameWork.Log.Success("icolor offset", " = " + iColor.R);
                     fZValue += iColor.R * 31; // 0 -> 30
-                    FrameWork.Log.Success("fZValue", " = " + fZValue);
-                    
                 }
 
                 {
-                    Color iColor = Terrain.GetPixel(PinX, PinY);
-                    FrameWork.Log.Success("icolor terrain", " = " + iColor.R);
-                    fZValue += iColor.R;
-                    FrameWork.Log.Success("fZValue", " = " + fZValue);
-                    
+                    Color iColor = Terrain.GetPixel(PinX, PinY);               
+                    fZValue += iColor.R;                    
                 }
             }
             catch (Exception e)
@@ -86,9 +72,8 @@ namespace WorldServer
             }
 
             fZValue *= 8;  // was 16
-            FrameWork.Log.Success("fZValue", " = " + fZValue);
-            FrameWork.Log.Success("fZValue", " = " +(fZValue - 30));
-            return (int)fZValue + 15;    // removed -30
+                       
+            return (int)fZValue;    // removed -30
         }
 
         public void Load()

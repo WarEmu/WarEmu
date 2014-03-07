@@ -62,7 +62,7 @@ namespace WorldServer
 
             X = Zone.CalculPin((uint)(Spawn.WorldX), true);
             Y = Zone.CalculPin((uint)(Spawn.WorldY), false);
-            Z = (ushort)(Spawn.WorldZ * 2);
+            Z = (ushort)(Spawn.WorldZ);
 
 
             // TODO : Bad Height Formula

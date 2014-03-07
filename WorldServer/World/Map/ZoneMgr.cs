@@ -187,9 +187,9 @@ namespace WorldServer
 
             WorldPosition.X = (int)((int)XZone + ((int)((int)x) & 0x00000FFF));
             WorldPosition.Y = (int)((int)YZone + ((int)((int)y) & 0x00000FFF));
-            WorldPosition.Z = Z / 2;
-            if (ZoneID == 161)
-                WorldPosition.Z = (32768 + Z) / 2;
+            WorldPosition.Z = Z ;
+      //      if (ZoneID == 161)
+       //         WorldPosition.Z = (32768 + Z);
 
             return WorldPosition;
         }
@@ -203,9 +203,9 @@ namespace WorldServer
 
             WorldPosition.X = (int)((int)CalcOffset(Info,PinX,true) + ((int)((int)x) & 0x00000FFF));
             WorldPosition.Y = (int)((int)CalcOffset(Info, PinY, false) + ((int)((int)y) & 0x00000FFF));
-            WorldPosition.Z = PinZ / 2;
-            if (Info.ZoneId == 161)
-                WorldPosition.Z = (32768 + PinZ) / 2;
+            WorldPosition.Z = PinZ;
+          //  if (Info.ZoneId == 161)
+          //      WorldPosition.Z = (32768 + PinZ);
 
             return WorldPosition;
         }

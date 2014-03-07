@@ -343,11 +343,15 @@ namespace WorldServer
 
         static public bool Gps(Player Plr, ref List<string> Values)
         {
+            FrameWork.Log.Success("player hight", " = " + Plr._Value.WorldZ);
+
             Plr.CalcWorldPositions();
             Object Obj = Plr.CbtInterface.GetTarget();
 
+             
+
             string Pos = "Px="+Plr.X+",Py="+Plr.Y+",Pz="+Plr.Z;
-            Pos+=",Wx="+Plr._Value.WorldX +",Wy="+Plr._Value.WorldY;
+            Pos+=",Wx="+Plr._Value.WorldX +",Wy="+Plr._Value.WorldY+",Wz="+Plr._Value.WorldZ;
             Pos += ",Ox=" + Plr.XOffset + ",Oy=" + Plr.YOffset;
             Pos += ",Wh=" + Plr._Value.WorldO + ",Ph=" + Plr.Heading + ",HeightMap=" + HeightMapMgr.GetHeight(Plr.Zone.ZoneId, Plr._Value.WorldX, Plr._Value.WorldY);
             if (Obj != null)

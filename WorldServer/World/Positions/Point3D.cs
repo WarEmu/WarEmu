@@ -92,7 +92,7 @@ namespace WorldServer
         {
             double dx = (double)X - point.X;
             double dy = (double)Y - point.Y;
-            double dz = (double)Z/2 - point.Z/2;
+            double dz = (double)Z - point.Z;
 
             return (int)(Math.Sqrt(dx * dx + dy * dy + dz * dz) /13.2f);
         }
@@ -107,7 +107,7 @@ namespace WorldServer
         {
             double dx = (double)X - point.X;
             double dy = (double)Y - point.Y;
-            double dz = (double)((Z/2 - point.Z/2) * zfactor);
+            double dz = (double)((Z - point.Z) * zfactor);
 
             return (int)(Math.Sqrt(dx * dx + dy * dy + dz * dz) / 13.2f);
         }

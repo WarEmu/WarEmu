@@ -122,7 +122,10 @@ namespace WorldServer
 
                 X = Plr.Zone.CalculPin(X, Plr.XOffset, true);
                 Y = Plr.Zone.CalculPin(Y, Plr.YOffset, false);
+               
             }
+
+            Z /= 2;
 
             Plr.SetPosition(X, Y, Z, Heading);
         }
