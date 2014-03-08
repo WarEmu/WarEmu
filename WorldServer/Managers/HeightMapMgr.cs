@@ -25,17 +25,6 @@ namespace WorldServer
 
         public int GetHeight(int PinX, int PinY)
         {
-            if (this.ZoneID == 130)
-            {
-                PinX = PinX - 327684;
-                PinY = PinY - 327684;
-            }
-            else if (this.ZoneID == 100)
-            {
-                PinX = PinX - 819220;
-                PinY = PinY - 819220;
-            }
-
             Load();
 
             if (Offset == null || Terrain == null)
