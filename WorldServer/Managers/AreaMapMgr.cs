@@ -22,61 +22,61 @@ namespace WorldServer
             this.Areas = Areas;
         }
 
-        public Zone_Area GetArea(ushort PinX, ushort PinY, byte Realm, List<Zone_Area> Excepts=null)
+        public List<Zone_Area> GetArea(ushort PinX, ushort PinY, byte Realm, List<Zone_Area> Excepts = null)
         {
+            List<Zone_Area> Areain=new List<Zone_Area>();
             foreach(Zone_Area Area in Areas)
             {
-                if (Area.Realm == Realm && Area.IsOnArea(PinX,PinY))
+                if (Area.IsOnArea(PinX,PinY))
                     if (Excepts == null || !Excepts.Contains(Area))
-                        return Area;
+                        Areain.Add(Area);
             }
 
-            return null;
+            return Areain;
         }
 
         public uint GetTokExplore(TokInterface Interface,ushort PinX, ushort PinY, byte Realm)
         {
-            Zone_Area Area = GetArea(PinX, PinY, Realm);
-            Log.Info("GetTokExplore", "Area = " + Area);
-
-            if (Area == null)
-                return 0;
-
-            if (Area.TokExploreEntry == 0)
-                return 0;
-
-            if (Interface != null && Interface.HasTok(Area.TokExploreEntry))
-                return Area.TokExploreEntry;
-
-            if (IsOnExploreArea(Area, PinX, PinY))
+            List<Zone_Area> Areain = GetArea(PinX, PinY, Realm);
+            foreach (Zone_Area Area in Areain)
             {
-                if (Interface != null)
-                    Interface.AddTok(Area.TokExploreEntry);
 
-                return Area.TokExploreEntry;
-            }
-            else
-                return 0;
+                if (Area != null && Area.TokExploreEntry != 0 && Interface != null)
+                            if(!Interface.HasTok(Area.TokExploreEntry))
+                                    if (IsOnExploreArea(Area, PinX, PinY))
+                            {
+                                Interface.AddTok(Area.TokExploreEntry);
+                                return Area.TokExploreEntry;
+
+                            }
+             }
+            return 0;
         }
 
         public uint GetInfluenceId(ushort PinX, ushort PinY, byte Realm)
         {
-            Zone_Area Area = GetArea(PinX, PinY, Realm);
+            List<Zone_Area> Areain = GetArea(PinX, PinY, Realm);
+            foreach (Zone_Area Area in Areain)
+            {
+                if (Area == null)
+                    return 0;
 
-            if (Area == null)
-                return 0;
+                if (Area.InfluenceId == 0)
+                    return 0;
 
-            if (Area.InfluenceId == 0)
-                return 0;
+                if (IsOnExploreArea(Area, PinX, PinY))
+                    return Area.InfluenceId;
+                else
+                    return 0;
 
-            if (IsOnExploreArea(Area, PinX, PinY))
-                return Area.InfluenceId;
-            else
-                return 0;
+            }
+            return 0;
+            
         }
 
         public bool IsOnExploreArea(Zone_Area Area, ushort PinX, ushort PinY)
         {
+
             if (Area == null || Area.Information == null)
                 return false;
 
