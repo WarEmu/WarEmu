@@ -197,7 +197,7 @@ namespace WorldServer
             new CommandHandler("/script", null, null ),
             new CommandHandler("/shout", PlayerShout, null),
             new CommandHandler("/social", null, SocialHandler ),
-            new CommandHandler("/stuck", null, null ),
+            new CommandHandler("/stuck", PlayerStuck, null ),
             new CommandHandler("/target", null, null ),
 	        new CommandHandler("/tell", PlayerWisp, null),
             new CommandHandler("/t", null, null ),
@@ -278,6 +278,14 @@ namespace WorldServer
 
         static public void PlayerQuit(Player Plr,string Text) { if(!Plr.Leaving) Plr.Quit(true); }
         static public void PlayerExit(Player Plr, string Text) { Plr.DisconnectTime = 0; Plr.Quit(); }
+        static public void PlayerStuck(Player Plr, string Text)
+        {
+            if (Plr.CbtInterface.IsFighting())
+                return;
+
+            CharacterInfo characterInfo = CharMgr.GetCharacterInfo(Plr._Info.Career);
+            Plr.Teleport(characterInfo.ZoneId, (uint)characterInfo.WorldX, (uint)characterInfo.WorldY, (ushort)characterInfo.WorldZ, (ushort)characterInfo.WorldO);
+        }
 
         #region Tchat
 
