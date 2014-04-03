@@ -30,6 +30,9 @@ namespace WorldServer
 
                     Program.Rm.OnlinePlayers = (uint)_Players.Count;
                     Program.AcctMgr.UpdateRealm(Program.Rm.RealmId, Program.Rm.OnlinePlayers, Program.Rm.OrderCount, Program.Rm.DestructionCount);
+
+                    CharMgr.Database.ExecuteNonQuery("UPDATE characters_value SET Online=1 WHERE CharacterId=" + Plr._Info.CharacterId + ";");
+                    Plr._Value.Online = true;
                 }
         }
         static public void RemovePlayer(Player Plr)
@@ -44,7 +47,9 @@ namespace WorldServer
 
                 Program.Rm.OnlinePlayers = (uint)_Players.Count;
                 Program.AcctMgr.UpdateRealm(Program.Rm.RealmId, Program.Rm.OnlinePlayers, Program.Rm.OrderCount, Program.Rm.DestructionCount);
- 
+
+                CharMgr.Database.ExecuteNonQuery("UPDATE characters_value SET Online=0 WHERE CharacterId=" + Plr._Info.CharacterId + ";");
+                Plr._Value.Online = false;
             }
         }
         static public Player GetPlayer(string Name)
