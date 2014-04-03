@@ -153,20 +153,13 @@ namespace WorldServer
             Out.WriteByte(0); // 1 = localized name
 
             Out.WriteByte(0);
-            Out.WriteByte((byte)(Mail.SenderName.Length + 1));
-            Out.WriteStringBytes(Mail.SenderName);
-            Out.WriteByte(0);
+            Out.WriteStringToZero(Mail.SenderName);
 
             Out.WriteByte(0);
-
-            Out.WriteByte((byte)(Mail.ReceiverName.Length + 1));
-            Out.WriteStringBytes(Mail.ReceiverName);
-            Out.WriteByte(0);
+            Out.WriteStringToZero(Mail.ReceiverName);
 
             Out.WriteByte(0);
-            Out.WriteByte((byte)(Mail.Title.Length + 1));
-            Out.WriteStringBytes(Mail.Title);
-            Out.WriteByte(0);
+            Out.WriteStringToZero(Mail.Title);
 
             Out.WriteUInt32(0);
 

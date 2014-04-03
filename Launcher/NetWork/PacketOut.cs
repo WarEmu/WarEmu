@@ -263,6 +263,22 @@ namespace Launcher
             Write(bytes, 0, bytes.Length);
         }
 
+        public virtual void WriteStringToZero(string str)
+        {
+            if (str == null || str.Length <= 0)
+            {
+                WriteByte(1);
+            }
+            else
+            {
+                byte[] bytes = Encoding.ASCII.GetBytes(str);
+                WriteByte((byte)(bytes.Length + 1));
+                Write(bytes, 0, bytes.Length);
+            }
+
+            WriteByte(0);
+        }
+
         public virtual void WriteString(string str)
         {
             WriteUInt32((UInt32)str.Length);
