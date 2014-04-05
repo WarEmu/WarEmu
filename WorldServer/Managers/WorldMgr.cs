@@ -495,13 +495,13 @@ namespace WorldServer
             else return null;
         }
 
-        static public void GenerateXP(Unit Killer, Unit Victim)
+        static public uint GenerateXPCount(Player Plr, Unit Victim)
         {
-            UInt32 KLvl = Killer.Level;
+            UInt32 KLvl = Plr.Level;
             UInt32 VLvl = Victim.Level;
 
             if (KLvl > VLvl + 8)
-                return;
+                return 0;
 
             UInt32 XP = VLvl * 60;
             XP += (UInt32)Victim.Rank * 20;
@@ -512,8 +512,24 @@ namespace WorldServer
             if (Program.Config.XpRate > 0)
                 XP *= (UInt32)Program.Config.XpRate;
 
-            if (Killer.IsPlayer())
-                Killer.GetPlayer().AddXp(XP);
+            return XP;
+        }
+
+        static public void GenerateXP(Unit Killer, Unit Victim)
+        {
+            if (!Killer.IsPlayer())
+                return;
+
+            Player player = Killer.GetPlayer();
+
+            if (player.GetGroup() == null)
+            {
+                player.AddXp(GenerateXPCount(player, Victim));
+            }
+            else
+            {
+                player.GetGroup().AddXp(player, Victim);
+            }
         }
 
         #endregion
@@ -542,10 +558,10 @@ namespace WorldServer
             else return null;
         }
 
-        static public void GenerateRenown(Player Killer, Player Victim)
+        static public uint GenerateRenownCount(Player Killer, Player Victim)
         {
-            if (Killer == null || Victim == null)
-                return;
+            if (Killer == null || Victim == null || Killer == Victim)
+                return 0;
 
             UInt32 VRp = Victim._Value.RenownRank;
             UInt32 VLvl = Victim.Level;
@@ -555,7 +571,22 @@ namespace WorldServer
             if (Program.Config.RenownRate > 0)
                 RP *= (UInt32)Program.Config.RenownRate;
 
-            Killer.AddRenown(RP);
+            return RP;
+        }
+
+        static public void GenerateRenown(Player Killer, Player Victim)
+        {
+            if (Killer == null || Victim == null || Killer == Victim)
+                return;
+
+            if (Killer.GetGroup() == null)
+            {
+                Killer.AddRenown(GenerateRenownCount(Killer, Victim));
+            }
+            else
+            {
+                Killer.GetGroup().AddRenown(Killer, Victim);
+            }  
         }
 
         #endregion

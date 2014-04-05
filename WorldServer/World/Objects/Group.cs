@@ -161,6 +161,11 @@ namespace WorldServer
             Plr.SendLocalizeString("", GameData.Localized_text.TEXT_YOU_NOW_PARTY_LEADER);
         }
 
+        public int Size()
+        {
+            return Members.Count;
+        }
+
         public bool IsFull()
         {
             return Members.Count >= 6;
@@ -277,6 +282,56 @@ namespace WorldServer
             }
 
             Members.Clear();
+        }
+
+        public void AddXp(Player Killer, Unit Victim)
+        {
+            uint activePlayers = 0;
+
+            foreach (Player Plr in Members)
+            {
+                if (Plr == Killer || Plr.GetDistance(Killer) < 100)
+                {
+                    activePlayers++;
+                }
+            }
+
+            foreach (Player Plr in Members)
+            {
+                if (Plr == Killer || Plr.GetDistance(Killer) < 100)
+                {
+                    Plr.AddXp(WorldMgr.GenerateXPCount(Plr, Victim) / activePlayers);
+                }
+            }
+        }
+
+        public void AddRenown(Player Killer, Player Victim)
+        {
+            uint activePlayers = 0;
+
+            foreach (Player Plr in Members)
+            {
+                if (Plr == Killer || Plr.GetDistance(Killer) < 100)
+                {
+                    activePlayers++;
+                }
+            }
+
+            foreach (Player Plr in Members)
+            {
+                if (Plr == Killer || Plr.GetDistance(Killer) < 100)
+                {
+                    Plr.AddRenown(WorldMgr.GenerateRenownCount(Plr, Victim) / activePlayers);
+                }
+            }
+        }
+
+        public void AddMoney(uint Money)
+        {
+            foreach (Player Plr in Members)
+            {
+                Plr.AddMoney(Money);
+            }
         }
     }
 }

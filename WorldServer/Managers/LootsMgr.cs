@@ -51,7 +51,14 @@ namespace WorldServer
         {
             if (Money > 0)
             {
-                Plr.AddMoney(Money);
+                if (Plr.GetGroup() == null)
+                {
+                    Plr.AddMoney(Money);
+                }
+                else
+                {
+                    Plr.GetGroup().AddMoney(Money / (uint)Plr.GetGroup().Size());
+                }
                 Money = 0;
             }
 
