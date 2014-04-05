@@ -189,7 +189,7 @@ namespace WorldServer
 
         public void CombatStart(Unit Fighter)
         {
-            Log.Success("CombatStart", Obj.Name + " Start combat with " + Fighter.Name);
+            //Log.Success("CombatStart", Obj.Name + " Start combat with " + Fighter.Name);
             State = AiState.FIGHTING;
             GetAggro(Fighter.Oid).DamagesReceive+=100;
         }
