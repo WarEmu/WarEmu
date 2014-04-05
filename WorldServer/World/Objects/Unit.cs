@@ -209,6 +209,7 @@ namespace WorldServer
 
         public uint TotalHealth { get { return MaxHealth + BonusHealth; } }
         public byte PctHealth { get { return (byte)((Health * 100) / TotalHealth); } }
+        public byte PctAp { get { return (byte)((ActionPoints * 100) / MaxActionPoints); } }
         public bool IsDead 
         { 
             get 

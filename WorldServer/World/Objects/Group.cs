@@ -113,23 +113,29 @@ namespace WorldServer
                 Out.WriteByte((byte)Plr.Level);
                 Out.WriteUInt16((ushort)Plr._Info.CareerLine);
                 Out.WriteByte(1);
-                Out.WriteUInt16(0);
+                Out.WriteByte(0); // Will be 1 for at least one member. Perhaps Leader?
+                Out.WriteByte(0);
                 Out.WriteByte(1); // Online = 1, Offline = 0
                 Out.WriteByte((byte)Plr.Name.Length);
                 Out.Fill(0, 3);
                 Out.WriteStringBytes(Plr.Name);
-                Out.Fill(0, 4);
+                Out.WriteByte(0); // Name length. Pet? Target?
+                Out.Fill(0, 3);
+                //Out.WriteStringBytes(Pet name? Target?);
 
-                // X/Y ....
-                byte[] data =
-			    {
-				    0x84,0x7A,0x90,0x95,0x03,0xE2,0x36,0x50,0xE2,0x50,
-				    0x40,0x01,0x02,0xD4,0x01,0x01,
-			    };
-
+                Out.WriteByte(0x8B);
+                Out.WriteUInt16R((ushort)650); // X ?
+                Out.WriteByte(0xD3);
+                Out.WriteUInt16R((ushort)650); // y ?
+                byte[] data = { 0xC8, 0x50, 0x27, 0x25, 0x05, 0x40, 0x01, 0x02 };
                 Out.Write(data);
+                
+                Out.WriteByte((byte)(Plr._Value.ZoneId*2));
+                Out.WriteByte(1);
+                Out.WriteByte(1);
+ 
                 Out.WriteByte((byte)Plr.PctHealth);
-                Out.WriteByte(0x64); // action points
+                Out.WriteByte((byte)Plr.PctAp); // action points
                 Out.WriteByte(0);
             }
 
