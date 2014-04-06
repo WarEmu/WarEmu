@@ -26,6 +26,30 @@ namespace WorldServer
             COMBAT = 95,        // 001011111
         }
 
+        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_ZONEJUMP, "onZoneJump")]
+        static public void F_ZONEJUMP(BaseClient client, PacketIn packet)
+        {
+            GameClient cclient = client as GameClient;
+
+            if (cclient.Plr == null || !cclient.Plr.IsInWorld())
+                return;
+
+            Player Plr = cclient.Plr;
+
+            uint Entry = packet.GetUint32();
+
+            Zone_Jump ZoneJump = WorldMgr.GetZoneJump(Entry);
+
+            if (ZoneJump != null)
+            {
+                Plr.Teleport(ZoneJump.ZoneID, ZoneJump.WorldX, ZoneJump.WorldY, ZoneJump.WorldZ, ZoneJump.WorldO);
+            }
+            else
+            {
+                Log.Error("ZoneJump", "Invalid Jump Entry=" + Entry);
+            }
+        }
+
         [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_PLAYER_STATE2, "onPlayerState2")]
         static public void F_PLAYER_STATE2(BaseClient client, PacketIn packet)
         {

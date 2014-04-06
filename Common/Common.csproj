@@ -107,6 +107,7 @@
     <Compile Include="Database\World\Chapters\Tok_Info.cs" />
     <Compile Include="Database\World\Levels\Xp_Info.cs" />
     <Compile Include="Database\World\Maps\Zone_Area.cs" />
+    <Compile Include="Database\World\Maps\Zone_Jump.cs" />
     <Compile Include="Database\World\Maps\Zone_Respawn.cs" />
     <Compile Include="Database\World\Maps\Zone_Taxi.cs" />
     <Compile Include="Database\World\PQuests\PQuest_Info.cs" />

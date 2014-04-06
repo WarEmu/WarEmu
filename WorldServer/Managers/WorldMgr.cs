@@ -40,6 +40,40 @@ namespace WorldServer
             return _Zone_Info.FindAll(zone => zone != null && zone.Region == RegionId);
         }
 
+        public static Dictionary<uint, Zone_Jump> _Zone_Jump;
+
+        [LoadingFunction(true)]
+        static public void LoadZone_Jump()
+        {
+            Log.Debug("WorldMgr", "Loading Zone_Jump...");
+
+            _Zone_Jump = new Dictionary<uint, Zone_Jump>();
+            IList<Zone_Jump> Jumps = Database.SelectAllObjects<Zone_Jump>();
+            foreach (Zone_Jump Jump in Jumps)
+            {
+		        Jump.ZoneInfo = GetZone_Info(Jump.ZoneID);
+
+		        if(Jump.ZoneInfo != null && !_Zone_Jump.ContainsKey(Jump.Entry))
+		        {
+			        _Zone_Jump.Add(Jump.Entry, Jump);
+		        }
+		        else
+		        {
+			        Log.Error("Zone_Jump", "Invalid Jump: " + Jump.Entry + ", Zone=" + Jump.ZoneID);
+		        }
+            }
+
+            Log.Success("LoadZone_Jump", "Loaded " + _Zone_Jump .Count + " Zone_Jump");
+        }
+
+        static public Zone_Jump GetZoneJump(uint Entry)
+        {
+            Zone_Jump ZoneJump;
+
+            _Zone_Jump.TryGetValue(Entry, out ZoneJump);
+
+            return ZoneJump;
+        }
 
         static public Dictionary<int, List<Zone_Area>> _Zone_Area;
 
