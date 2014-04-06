@@ -158,7 +158,8 @@ namespace WorldServer
             _Value = Info.Value[0];
 
             Name = Info.Name;
-            SetFaction((byte)(8*(8*Info.Realm)+6));
+            Realm = (GameData.Realms)Info.Realm;
+            SetPvpFlag(false);
 
             EvtInterface = EventInterface.GetEventInterface((uint)_Info.CharacterId);
             SocInterface = new SocialInterface(this);
@@ -271,6 +272,34 @@ namespace WorldServer
             base.Update();
             UpdatePackets();
         }
+
+        #region Pvp
+
+        public void SetPvpFlag(bool Enabled)
+        {
+            if (Enabled)
+            {
+                Faction = (byte)(Realm == GameData.Realms.REALMS_REALM_DESTRUCTION ? 72 : 68);
+                
+            }
+            else
+            {
+                Faction = (byte)(Realm == GameData.Realms.REALMS_REALM_DESTRUCTION ? 8 : 6);
+            }
+
+            if (IsInWorld() || _Loaded)
+            {
+                foreach (Player Plr in _PlayerRanged)
+                {
+                    if (Plr.HasInRange(this))
+                    {
+                        SendMeTo(Plr);
+                    }
+                }
+            }
+        }
+
+        #endregion
 
         #region Packets
 
@@ -755,10 +784,14 @@ namespace WorldServer
             Out.Fill(0, 12);
 
             Out.WriteByte(_Info.Race);
-            Out.Fill(0, 11);
+            Out.WriteByte(0); //sometimes 1
+            Out.WriteByte(0); // health/ap?
+            Out.WriteByte(PctHealth);
+            Out.Fill(0, 8);
+
             Out.WritePascalString(_Info.Name);
-            Out.WritePascalString("");
-            Out.WriteByte(0);
+            Out.WritePascalString(""); // suffix. title?
+            Out.WritePascalString(""); // guild name
             Out.Fill(0, 4);
 
             Plr.SendPacket(Out);

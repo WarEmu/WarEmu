@@ -19,20 +19,31 @@ namespace WorldServer
             if (!cclient.IsPlaying())
                 return;
 
-            byte SlotCount = packet.GetUint8();
-            byte Price = packet.GetUint8();
-
+            byte Type = packet.GetUint8();
+            
             Player Plr = cclient.Plr;
 
-            if (!Plr.ItmInterface.HasMaxBag())
-                if (Plr.HaveMoney(Plr.ItmInterface.GetBagPrice()))
-                {
-                    if (Plr.RemoveMoney(Plr.ItmInterface.GetBagPrice()))
+            switch (Type)
+            {
+                case 3: // Toggle Pvp
+                    Plr.CbtInterface.TogglePvp();
+                    break;
+
+                case 16: // Buy more bag space
+                    byte Price = packet.GetUint8();
+                    if (!Plr.ItmInterface.HasMaxBag())
                     {
-                        ++Plr.ItmInterface.BagBuy;
-                        Plr.ItmInterface.SendMaxInventory(Plr);
+                        if (Plr.HaveMoney(Plr.ItmInterface.GetBagPrice()))
+                        {
+                            if (Plr.RemoveMoney(Plr.ItmInterface.GetBagPrice()))
+                            {
+                                ++Plr.ItmInterface.BagBuy;
+                                Plr.ItmInterface.SendMaxInventory(Plr);
+                            }
+                        }
                     }
-                }
+                    break;
+            }
         }
 
         [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_TRANSFER_ITEM, "onTransferItem")]

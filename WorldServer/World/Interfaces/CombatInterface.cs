@@ -80,6 +80,9 @@ namespace WorldServer
 
         public AiState State = AiState.STANDING;
 
+        public bool IsPvp;
+        public long NextAllowedDisable;
+
         public CombatInterface(Object Obj)
             : base(Obj)
         {
@@ -118,6 +121,7 @@ namespace WorldServer
                         }
                     }
                 }
+                DisablePvp(Tick, false);
             }
             else
                 AttackAI(Target);
@@ -419,6 +423,11 @@ namespace WorldServer
 
             AddDamageReceive(Fighter.Oid, DamageCount);
             Obj.EvtInterface.Notify("OnTakeDamage", Fighter, null);
+
+            if (Obj.IsPlayer() || Fighter.IsPlayer())
+            {
+                ResetPvpTime();
+            }
         }
 
         public void OnDealDamage(Unit Victim, UInt32 DamageCount)
@@ -430,6 +439,11 @@ namespace WorldServer
                     break;
             };
             Obj.EvtInterface.Notify("OnDealDamage", Victim, null);
+
+            if (Obj.IsPlayer() || Victim.IsPlayer())
+            {
+                ResetPvpTime();
+            }
         }
 
         public void OnTargetDie(Unit Victim)
@@ -440,6 +454,57 @@ namespace WorldServer
                 CombatStop();
 
             Obj.EvtInterface.Notify("OnTargetDie", Victim, null);
+        }
+
+        #endregion
+
+        #region Pvp
+
+        public void TogglePvp()
+        {
+            if (IsPvp)
+            {
+                if (NextAllowedDisable == 0)
+                {
+                    ResetPvpTime();
+                }
+
+                Obj.GetPlayer().SendLocalizeString("", GameData.Localized_text.TEXT_RVR_UNFLAG);
+            }
+            else
+            {
+                EnablePvp();
+            }
+        }
+
+        public void EnablePvp()
+        {
+            if (IsPvp)
+                return;
+
+            NextAllowedDisable = 0;
+            IsPvp = true;
+            Obj.GetPlayer().SetPvpFlag(true);
+            Obj.GetPlayer().SendLocalizeString("", GameData.Localized_text.TEXT_RVR_FLAG);
+            Obj.GetPlayer().SendLocalizeString("", GameData.Localized_text.TEXT_YOU_ARE_NOW_RVR_FLAGGED);
+        }
+
+        public void DisablePvp(long Tick, bool Force)
+        {
+            if (!IsPvp || NextAllowedDisable == 0 || !Force && NextAllowedDisable >= Tick)
+                return;
+
+            NextAllowedDisable = 0;
+            IsPvp = false;
+            Obj.GetPlayer().SetPvpFlag(false);
+            Obj.GetPlayer().SendLocalizeString("", GameData.Localized_text.TEXT_YOU_ARE_NO_LONGER_RVR_FLAGGED);
+        }
+
+        public void ResetPvpTime()
+        {
+            EnablePvp();
+
+            NextAllowedDisable = TCPManager.GetTimeStampMS() + 600000;
         }
 
         #endregion
