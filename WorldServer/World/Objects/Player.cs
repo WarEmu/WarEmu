@@ -280,7 +280,6 @@ namespace WorldServer
             if (Enabled)
             {
                 Faction = (byte)(Realm == GameData.Realms.REALMS_REALM_DESTRUCTION ? 72 : 68);
-                
             }
             else
             {

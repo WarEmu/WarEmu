@@ -424,7 +424,7 @@ namespace WorldServer
             AddDamageReceive(Fighter.Oid, DamageCount);
             Obj.EvtInterface.Notify("OnTakeDamage", Fighter, null);
 
-            if (Obj.IsPlayer() || Fighter.IsPlayer())
+            if (Obj.IsPlayer() && Fighter.IsPlayer())
             {
                 ResetPvpTime();
             }
@@ -440,7 +440,7 @@ namespace WorldServer
             };
             Obj.EvtInterface.Notify("OnDealDamage", Victim, null);
 
-            if (Obj.IsPlayer() || Victim.IsPlayer())
+            if (Obj.IsPlayer() && Victim.IsPlayer())
             {
                 ResetPvpTime();
             }
