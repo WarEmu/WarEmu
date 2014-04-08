@@ -270,5 +270,45 @@ namespace WorldServer
             Out.Write(new byte[0x11], 0, 0x11);
             cclient.SendTCP(Out);
         }
+
+        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_RENAME_CHARACTER, "onRenameCharacter")]
+        static public void F_RENAME_CHARACTER(BaseClient client, PacketIn packet)
+        {
+            GameClient cclient = client as GameClient;
+
+            packet.Skip(3);
+
+            string OldName = packet.GetString(24);
+            string NewName = packet.GetString(24);
+
+            Log.Success("F_RENAME_CHARACTER", "Renaming: '" + OldName + "' To: '" + NewName + "'");
+
+            if (NewName.Length > 2 && !CharMgr.NameIsUsed(NewName))
+            {
+                Character Char = CharMgr.GetCharacter(OldName);
+
+                if (Char == null || Char.AccountId != cclient._Account.AccountId)
+                {
+                    Log.Error("CharacterRename", "Hack: Tried to rename character which account dosen't own");
+                    cclient.Disconnect();
+                    return;
+                }
+
+                Char.Name = NewName;
+                CharMgr.Database.SaveObject(Char);
+
+                // Wrong response? Perhaps needs to send F_REQUEST_CHAR_RESPONSE again.
+                PacketOut Out = new PacketOut((byte)Opcodes.F_SEND_CHARACTER_RESPONSE);
+                Out.WritePascalString(cclient._Account.Username);
+                cclient.SendTCP(Out);
+            }
+            else
+            {
+                // Wrong response?
+                PacketOut Out = new PacketOut((byte)Opcodes.F_SEND_CHARACTER_ERROR);
+                Out.WritePascalString(cclient._Account.Username);
+                cclient.SendTCP(Out);
+            }
+        }
     }
 }
