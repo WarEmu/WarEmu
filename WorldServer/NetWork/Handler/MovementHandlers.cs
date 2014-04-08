@@ -210,7 +210,7 @@ namespace WorldServer
         {
             GameClient cclient = client as GameClient;
 
-          /*  UInt16 SID;
+            UInt16 SID;
             byte unk1, serverID, characterSlot;
 
             SID = packet.GetUint16();
@@ -227,11 +227,11 @@ namespace WorldServer
             if (Program.Rm.RealmId != serverID)
                 cclient.Disconnect();
             else
-            {*/
+            {
                 PacketOut Out = new PacketOut((byte)Opcodes.S_PID_ASSIGN);
                 Out.WriteUInt16R((ushort)cclient.Id);
                 cclient.SendTCP(Out);
-            //}
+            }
         }
 
         [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_REQUEST_WORLD_LARGE, "onRequestWorldLarge")]
