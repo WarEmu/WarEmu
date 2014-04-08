@@ -37,81 +37,90 @@ namespace WorldServer
 
             string Name = packet.GetString(Info.NameSize);
 
-            if (!CharMgr.NameIsUsed(Name))
+            if (Name.Length > 2 && !CharMgr.NameIsUsed(Name))
             {
 
                 CharacterInfo CharInfo = CharMgr.GetCharacterInfo(Info.career);
                 if (CharInfo == null)
                 {
                     Log.Error("ON_CREATE", "Can not find career :" + Info.career);
-                    return;
                 }
-
-                Log.Success("OnCreate", "Creating new Character : " + Name);
-
-                Character Char = new Character();
-                Char.AccountId = cclient._Account.AccountId;
-                Char.bTraits = Traits;
-                Char.Career = Info.career;
-                Char.CareerLine = CharInfo.CareerLine;
-                Char.ModelId = Info.model;
-                Char.Name = Name;
-                Char.Race = Info.race;
-                Char.Realm = CharInfo.Realm;
-                Char.RealmId = Program.Rm.RealmId;
-                Char.Sex = Info.sex;
-
-                if (!CharMgr.CreateChar(Char))
+                else
                 {
-                    Log.Error("CreateCharacter", "Hack : can not create more than 10 characters!");
-                    return;
+
+                    Log.Success("OnCreate", "Creating new Character : " + Name);
+
+                    Character Char = new Character();
+                    Char.AccountId = cclient._Account.AccountId;
+                    Char.bTraits = Traits;
+                    Char.Career = Info.career;
+                    Char.CareerLine = CharInfo.CareerLine;
+                    Char.ModelId = Info.model;
+                    Char.Name = Name;
+                    Char.Race = Info.race;
+                    Char.Realm = CharInfo.Realm;
+                    Char.RealmId = Program.Rm.RealmId;
+                    Char.Sex = Info.sex;
+
+                    if (!CharMgr.CreateChar(Char))
+                    {
+                        Log.Error("CreateCharacter", "Hack : can not create more than 10 characters!");
+                    }
+                    else
+                    {
+
+                        Character_items Citm = null;
+                        CharacterInfo_item[] Items = CharMgr.GetCharacterInfoItem(Char.CareerLine);
+
+                        for (int i = 0; i < Items.Length; ++i)
+                        {
+                            if (Items[i] == null)
+                                continue;
+
+                            Citm = new Character_items();
+                            Citm.Counts = Items[i].Count;
+                            Citm.CharacterId = Char.CharacterId;
+                            Citm.Entry = Items[i].Entry;
+                            Citm.ModelId = Items[i].ModelId;
+                            Citm.SlotId = Items[i].SlotId;
+                            CharMgr.CreateItem(Citm);
+                        }
+
+                        Character_value CInfo = new Character_value();
+                        CInfo.CharacterId = Char.CharacterId;
+                        CInfo.Level = 1;
+                        CInfo.Money = 0;
+                        CInfo.Online = false;
+                        CInfo.RallyPoint = CharInfo.RallyPt;
+                        CInfo.RegionId = CharInfo.Region;
+                        CInfo.Renown = 0;
+                        CInfo.RenownRank = 1;
+                        CInfo.RestXp = 0;
+                        CInfo.Skills = CharInfo.Skills;
+                        CInfo.Speed = 100;
+                        CInfo.WorldO = CharInfo.WorldO;
+                        CInfo.WorldX = CharInfo.WorldX;
+                        CInfo.WorldY = CharInfo.WorldY;
+                        CInfo.WorldZ = CharInfo.WorldZ;
+                        CInfo.Xp = 0;
+                        CInfo.ZoneId = CharInfo.ZoneId;
+
+                        CharMgr.Database.AddObject(CInfo);
+
+                        Char.Value = new Character_value[1] { CInfo };
+
+                        PacketOut Out = new PacketOut((byte)Opcodes.F_SEND_CHARACTER_RESPONSE);
+                        Out.WritePascalString(cclient._Account.Username);
+                        cclient.SendTCP(Out);
+                    }
                 }
-
-                Character_items Citm = null;
-                CharacterInfo_item[] Items = CharMgr.GetCharacterInfoItem(Char.CareerLine);
-
-                for (int i = 0; i < Items.Length; ++i)
-                {
-                    if (Items[i] == null)
-                        continue;
-
-                    Citm = new Character_items();
-                    Citm.Counts = Items[i].Count;
-                    Citm.CharacterId = Char.CharacterId;
-                    Citm.Entry = Items[i].Entry;
-                    Citm.ModelId = Items[i].ModelId;
-                    Citm.SlotId = Items[i].SlotId;
-                    CharMgr.CreateItem(Citm);
-                }
-
-                Character_value CInfo = new Character_value();
-                CInfo.CharacterId = Char.CharacterId;
-                CInfo.Level = 1;
-                CInfo.Money = 0;
-                CInfo.Online = false;
-                CInfo.RallyPoint = CharInfo.RallyPt;
-                CInfo.RegionId = CharInfo.Region;
-                CInfo.Renown = 0;
-                CInfo.RenownRank = 1;
-                CInfo.RestXp = 0;
-                CInfo.Skills = CharInfo.Skills;
-                CInfo.Speed = 100;
-                CInfo.WorldO = CharInfo.WorldO;
-                CInfo.WorldX = CharInfo.WorldX;
-                CInfo.WorldY = CharInfo.WorldY;
-                CInfo.WorldZ = CharInfo.WorldZ;
-                CInfo.Xp = 0;
-                CInfo.ZoneId = CharInfo.ZoneId;
-
-                CharMgr.Database.AddObject(CInfo);
-
-                Char.Value = new Character_value[1] { CInfo };
             }
-
-
-            PacketOut Out = new PacketOut((byte)Opcodes.F_SEND_CHARACTER_RESPONSE);
-            Out.WritePascalString(cclient._Account.Username);
-            cclient.SendTCP(Out);
+            else
+            {
+                PacketOut Out = new PacketOut((byte)Opcodes.F_SEND_CHARACTER_ERROR);
+                Out.WritePascalString(cclient._Account.Username);
+                cclient.SendTCP(Out);
+            }
         }
 
         [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_DELETE_CHARACTER, "onDeleteCharacter")]
