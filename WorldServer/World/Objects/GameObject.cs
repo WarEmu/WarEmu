@@ -88,7 +88,8 @@ namespace WorldServer
 
             if (!IsDead)
             {
-                Plr.QtsInterface.HandleEvent(Objective_Type.QUEST_USE_GO, Spawn.Entry, 1);
+            Plr.QtsInterface.HandleEvent(Objective_Type.QUEST_USE_GO, Spawn.Proto.Entry, 1);
+            Plr.QtsInterface.HandleEvent(Objective_Type.QUEST_GET_ITEM, Spawn.Proto.Entry, 1);
             }
 
             if (Spawn.Proto.Name == "Mailbox") // Mailbox
@@ -100,6 +101,10 @@ namespace WorldServer
                 Plr.TokInterface.AddTok(Info.Entry);
 
             base.SendInteract(Plr, Menu);
+        }
+        public override string ToString()
+        {
+            return "SpawnId=" + Spawn.Guid + ",Entry=" + Spawn.Entry + ",Name=" + Name + ",Level=" + Level + ",Faction=" + Faction + ",Position :" + base.ToString();
         }
     }
 }

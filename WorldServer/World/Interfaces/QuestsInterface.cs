@@ -401,7 +401,7 @@ namespace WorldServer
                             }
                             else if (Type == Objective_Type.QUEST_GET_ITEM)
                             {
-                                if (Objective.Objective.Item != null && Entry == Objective.Objective.Item.Entry)
+                                if (Objective.Objective.ObjID != null && Entry == uint.Parse(Objective.Objective.ObjID))
                                     CanAdd = true;
                             }
                             else if (Type == Objective_Type.QUEST_USE_GO)
