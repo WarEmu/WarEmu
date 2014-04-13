@@ -12,15 +12,15 @@ namespace Launcher
         /// </summary>
         [STAThread]
         static void Main()
-        {            
-            if (!Client.Connect())
-                Environment.Exit(0);
-
+        {
+            // Je Fawk | 13 April 2014 | The client now connects once the connect button has been used
+            #region Old code
+            //if (!Client.Connect())
+            //    Environment.Exit(0);
+            #endregion
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new Accueil());
-
-
         }
     }
 }
