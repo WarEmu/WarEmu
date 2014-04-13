@@ -1,4 +1,5 @@
-﻿using System;
+﻿#region Libraries
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -8,6 +9,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.Security.Cryptography;
 using System.IO;
+#endregion
 
 namespace Launcher
 {
@@ -45,11 +47,14 @@ namespace Launcher
         //}
         #endregion
 
+        #region [Method] Disconnecting
         private void Disconnect(object sender, FormClosedEventArgs e)
         {
             Client.Close();
         }
+        #endregion
 
+        #region [Event] Button connect on click (Click)
         private void B_start_Click(object sender, EventArgs e)
         {
             string Username = T_username.Text.ToLower();
@@ -89,12 +94,15 @@ namespace Launcher
                 MessageBox.Show("Credentials are too short.");
             }
         }
+        #endregion
 
+        // Je Fawk: i don't know wtf this does 
         public void ReceiveStart()
         {
             B_start.Enabled = true;
         }
 
+        #region [Method] Write to textBox log
         public void Print(string Message)
         {
             // Je Fawk | 13 April 2014 | Modified from \n\r to Environment.NewLine for greater compatibility (don't ask, just seems right to me ;) )
@@ -103,14 +111,18 @@ namespace Launcher
             //T_Log.Text += Message + "\n" + "\r";
             #endregion
         }
+        #endregion
 
+        #region [Event] Combo box selected index changed (SelectedIndexChanged)
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             Client.Language = L_selection.Text;
             Print("Selection de : " + Client.Language);
             Client.UpdateLanguage();
         }
+        #endregion
 
+        #region [Event] Button view the realms on click (Click)
         private void b_realms_Click(object sender, EventArgs e)
         {
             // Je Fawk | 13 April 2014 | Checking if the application is connected before verifying the realms status
@@ -126,15 +138,20 @@ namespace Launcher
             //Client.UpdateRealms();
             #endregion
         }
+        #endregion
 
+        #region [Method] Clearing the realm dataGridView
         public void ClearRealms()
         {
             Realms.Rows.Clear();
         }
+        #endregion
 
+        #region [Method] Adding a new realm to the dataGridView
         public void AddRealm(string Name, bool Online, uint Players, uint Destruction, uint Order)
         {
             Realms.Rows.Add(Name, Online ? "true" : "false", "" + Players, "" + Destruction, "" + Order);
         }
+        #endregion
     }
 }

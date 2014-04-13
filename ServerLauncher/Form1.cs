@@ -1,4 +1,4 @@
-﻿
+﻿#region Libraries
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -9,6 +9,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.Diagnostics;
 using System.Threading;
+#endregion
 
 namespace ServerLauncher
 {
@@ -18,9 +19,7 @@ namespace ServerLauncher
         public Process LauncherServer;
         public Process LobbyServer;
         public Process WorldServer;
-
         public Process GameLauncher;
-
         static public string pathToGameExecutable;
         static public string pathToGameFolder;
 
@@ -30,67 +29,87 @@ namespace ServerLauncher
             // Je Fawk | 13 April 2014 | Getting the file path saved setting
             pathToGameExecutable = Properties.Settings.Default.setting_pathToGameExecutable;
             textBox_path.Text = pathToGameExecutable;
-            if (pathToGameExecutable.Length > 0)
+            // Worse case scenario for the length - C:\WAR.exe = 9 characters
+            if (pathToGameExecutable.Length > 9)
             {
                 pathToGameFolder = pathToGameExecutable.Remove(pathToGameExecutable.IndexOf("WAR.exe"));
             }
 
         }
-
+        #region [Event] Button start on click (Click)
         private void B_start_Click(object sender, EventArgs e)
         {
-            B_start.Enabled = false;
-
-            if (StartAccountCheckBox.Checked)
+            // Je Fawk | 13 April 2014 | Verifying that the path is valid
+            if (textBox_path.Text.Length > 9)
             {
-                AccountCacher = new Process();
-                AccountCacher.StartInfo.FileName = "AccountCacher.exe";
-                AccountCacher.StartInfo.WindowStyle = ProcessWindowStyle.Minimized;
-                AccountCacher.Start();
-                
-                Thread.Sleep(500);
-            }
 
-            if (StartLauncherCheckBox.Checked)
+                B_start.Enabled = false;
+
+                // Je Fawk | 13 April 2014 | Creating the game path file 
+                using (System.IO.StreamWriter file = new System.IO.StreamWriter(Application.StartupPath + "\\GamePath.txt"))
+                {
+                    file.WriteLine(pathToGameExecutable);
+                    file.WriteLine(pathToGameFolder);
+                }
+
+                if (StartAccountCheckBox.Checked)
+                {
+                    AccountCacher = new Process();
+                    AccountCacher.StartInfo.FileName = "AccountCacher.exe";
+                    AccountCacher.StartInfo.WindowStyle = ProcessWindowStyle.Minimized;
+                    AccountCacher.Start();
+
+                    Thread.Sleep(500);
+                }
+
+                if (StartLauncherCheckBox.Checked)
+                {
+                    LauncherServer = new Process();
+                    LauncherServer.StartInfo.FileName = "LauncherServer.exe";
+                    LauncherServer.StartInfo.WindowStyle = ProcessWindowStyle.Minimized;
+                    LauncherServer.Start();
+
+                    Thread.Sleep(500);
+                }
+
+                if (StartLobbyCheckBox.Checked)
+                {
+                    LobbyServer = new Process();
+                    LobbyServer.StartInfo.FileName = "LobbyServer.exe";
+                    LobbyServer.StartInfo.WindowStyle = ProcessWindowStyle.Minimized;
+                    LobbyServer.Start();
+
+                    Thread.Sleep(500);
+                }
+
+                if (StartWorldCheckBox.Checked)
+                {
+                    WorldServer = new Process();
+                    WorldServer.StartInfo.FileName = "WorldServer.exe";
+                    WorldServer.StartInfo.WindowStyle = ProcessWindowStyle.Minimized;
+                    WorldServer.Start();
+                    // Je Fawk | 13 April 2014 | Added to wait for the console to appear before starting the Launcher.exe
+                    Thread.Sleep(500);
+                }
+
+                // Je Fawk | 13 April 2014 | Starting the Launcher.exe from \bin\Release\Launcher\Launcher.exe
+                #region Starting the Warhammer Online Launcher
+                GameLauncher = new Process();
+                GameLauncher.StartInfo.FileName = Application.StartupPath + "\\Launcher\\Launcher.exe";
+                GameLauncher.Start();
+                #endregion
+
+                B_start.Enabled = true;
+
+            }
+            else
             {
-                LauncherServer = new Process();
-                LauncherServer.StartInfo.FileName = "LauncherServer.exe";
-                LauncherServer.StartInfo.WindowStyle = ProcessWindowStyle.Minimized;
-                LauncherServer.Start();
-
-                Thread.Sleep(500);
+                MessageBox.Show("The path is too small.");
             }
-
-            if (StartLobbyCheckBox.Checked)
-            {
-                LobbyServer = new Process();
-                LobbyServer.StartInfo.FileName = "LobbyServer.exe";
-                LobbyServer.StartInfo.WindowStyle = ProcessWindowStyle.Minimized;
-                LobbyServer.Start();
-
-                Thread.Sleep(500);
-            }
-
-            if (StartWorldCheckBox.Checked)
-            {
-                WorldServer = new Process();
-                WorldServer.StartInfo.FileName = "WorldServer.exe";
-                WorldServer.StartInfo.WindowStyle = ProcessWindowStyle.Minimized;
-                WorldServer.Start();
-                // Je Fawk | 13 April 2014 | Added to wait for the console to appear before starting the Launcher.exe
-                Thread.Sleep(500);
-            }
-
-            // Je Fawk | 13 April 2014 | Starting the Launcher.exe from \bin\Release\Launcher\Launcher.exe
-            #region Starting the Warhammer Online Launcher
-            GameLauncher = new Process();
-            GameLauncher.StartInfo.FileName = Application.StartupPath + "\\Launcher\\Launcher.exe";
-            GameLauncher.Start();
-            #endregion
-
-            B_start.Enabled = true;
         }
+        #endregion
 
+        #region [Event] Button stop on click (Click)
         private void B_stop_Click(object sender, EventArgs e)
         {
             try
@@ -117,6 +136,7 @@ namespace ServerLauncher
             }
             catch (Exception) { }
         }
+        #endregion
 
         // Je Fawk | 13 April 2014 | Browse button click event
         #region [Event] Button browse for path on click (Click)
