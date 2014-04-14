@@ -148,49 +148,51 @@ namespace WorldServer
                             break;
                     };
 
-                    // Je Fawk | 14 April 2014 | Fixing the drop rate so that a mob can drop the same item type more than once based on drop % Pct
+                    // Je Fawk | 14 April 2014 | Declined fix
+                    #region <Commented>
+                    // Fixing the drop rate so that a mob can drop the same item type more than once based on drop % Pct
                     // If the drop percentage is lower than 100%
-                    if (Pct < 100.0f)
-                    {
-                        if (RandomMgr.Next(10000) <= (Pct*100))
-                        {
-                            Loots.Add(new LootInfo(Loot.Info));
-                        }
-                    }
-                    else
-                        // If the drop percentage is between 100% and 999%
-                        if ((Pct > 100.0f) && (Pct < 1000.0f))
-                        {
-                            // For each 100 percentage give the player 1 item
-                            for (byte i = 0; i < Math.Floor((Pct / 100.0f)); i++)
-                            {
-                                Loots.Add(new LootInfo(Loot.Info));
-                            }
-                            // For the rest that's below 100 do a roll for a new item
-                            if (RandomMgr.Next(10000) <= ((Pct % 100) * 100))
-                            {
-                                Loots.Add(new LootInfo(Loot.Info));
-                            }
-                        }
-                        else
-                            // For the extreme case where we want the item to drop more than 10 per mob
-                            if (( Pct > 1000.0f) && (Pct < 10000.0f))
-                            {
-                                // For each 100 percentage give the player 1 item
-                                for (int i = 0; i < Math.Floor((Pct / 100.0f)); i++)
-                                {
-                                    Loots.Add(new LootInfo(Loot.Info));
-                                }
-                                // For the rest that's below 100 do a roll for a new item
-                                if (RandomMgr.Next(10000) <= ((Pct % 1000) * 100))
-                                {
-                                    Loots.Add(new LootInfo(Loot.Info));
-                                }
-                            }
-                    #region Old code
-                    //if (Pct  > 100.0f || RandomMgr.Next(10000) < (Pct*100))
-                    //  Loots.Add(new LootInfo(Loot.Info));
+                    //if (Pct < 100.0f)
+                    //{
+                    //    if (RandomMgr.Next(10000) <= (Pct*100))
+                    //    {
+                    //        Loots.Add(new LootInfo(Loot.Info));
+                    //    }
+                    //}
+                    //else
+                    //    // If the drop percentage is between 100% and 999%
+                    //    if ((Pct > 100.0f) && (Pct < 1000.0f))
+                    //    {
+                    //        // For each 100 percentage give the player 1 item
+                    //        for (byte i = 0; i < Math.Floor((Pct / 100.0f)); i++)
+                    //        {
+                    //            Loots.Add(new LootInfo(Loot.Info));
+                    //        }
+                    //        // For the rest that's below 100 do a roll for a new item
+                    //        if (RandomMgr.Next(10000) <= ((Pct % 100) * 100))
+                    //        {
+                    //            Loots.Add(new LootInfo(Loot.Info));
+                    //        }
+                    //    }
+                    //    else
+                    //        // For the extreme case where we want the item to drop more than 10 per mob
+                    //        if (( Pct > 1000.0f) && (Pct < 10000.0f))
+                    //        {
+                    //            // For each 100 percentage give the player 1 item
+                    //            for (int i = 0; i < Math.Floor((Pct / 100.0f)); i++)
+                    //            {
+                    //                Loots.Add(new LootInfo(Loot.Info));
+                    //            }
+                    //            // For the rest that's below 100 do a roll for a new item
+                    //            if (RandomMgr.Next(10000) <= ((Pct % 1000) * 100))
+                    //            {
+                    //                Loots.Add(new LootInfo(Loot.Info));
+                    //            }
+                    //        }
                     #endregion
+
+                    if (Pct > 100.0f || RandomMgr.Next(10000) < (Pct * 100))
+                        Loots.Add(new LootInfo(Loot.Info));
                 }
 
                 UInt32 Money = (UInt32)(Corps.Level * (UInt32)7) + (Corps.Rank * (UInt32)50);
