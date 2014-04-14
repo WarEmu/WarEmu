@@ -1,6 +1,4 @@
-﻿
- 
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,19 +9,27 @@ using System.Threading;
 using System.Diagnostics;
 using nsHashDictionary;
 using MYPHandler;
+// Using the Server Launcher reference
+using ServerLauncher;
 
 namespace Launcher
 {
     static public class Client
     {
         static public int Version = 1;
-        static public string IP = "127.0.0.1";
-        static public int Port = 8000;
+        // Je Fawk | 13 April 2014 | Making the app accept external IPs and ports
+        static public string IP;
+        static public int Port;
+        #region Old code
+        //static public string IP = "127.0.0.1";
+        //static public int Port = 8000;
+        #endregion
         static public bool Started = false;
 
         static public string User;
         static public string Auth;
         static public string Language = "";
+
 
         // TCP
         static public Socket _Socket;
@@ -107,8 +113,11 @@ namespace Launcher
                     break;
             };
 
-            string CurDir = Directory.GetCurrentDirectory();
-
+            // Je Fawk | 13 April 2014 | Modified to game folder path taken from from Accueil
+            string CurDir = Accueil.pathToGameFolder;
+            #region Old code
+            //string CurDir = Directory.GetCurrentDirectory();
+            #endregion 
             try
             {
                 Directory.SetCurrentDirectory(CurDir + "\\..\\user\\");
@@ -397,7 +406,11 @@ namespace Launcher
                         Print("Lancement avec : " + Auth);
                         try
                         {
-                            string CurrentDir = Directory.GetCurrentDirectory();
+                            // Je Fawk | 13 April 2014 | Modified to game folder path taken from from Accueil 
+                            string CurrentDir = Accueil.pathToGameFolder;
+                            #region Old code
+                            //string CurrentDir = Directory.GetCurrentDirectory();
+                            #endregion Old code
                             patchExe();
                             UpdateWarData();
                             Process Pro = new Process();
@@ -437,7 +450,6 @@ namespace Launcher
         {
             if(Started)
                 return;
-
            Started = true;
         }
 
@@ -459,16 +471,18 @@ namespace Launcher
 
             SendTCP(Out);
         }
+
         public static void patchExe()
         {
-            using (Stream stream = new FileStream(Directory.GetCurrentDirectory() + "\\..\\WAR.exe", FileMode.OpenOrCreate))
+            // Je Fawk | 13 April 2014 | Modified to game executable path taken from Accueil
+            using (Stream stream = new FileStream(Accueil.pathToGameExecutable, FileMode.Open))
+            #region Old code
+            //using (Stream stream = new FileStream(Directory.GetCurrentDirectory() + "\\..\\WAR.exe", FileMode.OpenOrCreate))
+            #endregion
             {
-
                 int encryptAddress = (0x00957FBE + 3) - 0x00400000;
                 stream.Seek(encryptAddress, SeekOrigin.Begin);
                 stream.WriteByte(0x01);
-
-
 
                 byte[] decryptPatch1 = { 0x90, 0x90, 0x90, 0x90, 0x57, 0x8B, 0xF8, 0xEB, 0x32 };
                 int decryptAddress1 = (0x009580CB) - 0x00400000;
@@ -483,13 +497,27 @@ namespace Launcher
                 //stream.WriteByte(0x01);
             }
         }
+
         static public void UpdateWarData()
         {
             try
             {
-                FileStream fs = new FileStream(Application.StartupPath + "\\mythloginserviceconfig.xml", FileMode.Open, FileAccess.Read);
+                //FileStream fs = new FileStream(Application.StartupPath + "\\mythloginserviceconfig.xml", FileMode.Open, FileAccess.Read);
+                FileStream fs = new FileStream(Application.StartupPath.Remove(Application.StartupPath.LastIndexOf('\\')) + "\\mythloginserviceconfig.xml", FileMode.Open, FileAccess.Read);
 
-                Directory.SetCurrentDirectory(Directory.GetCurrentDirectory() + "\\..\\");
+                // Je Fawk | 13 April 2014 | Accessing the game folder path taken from Accueil from ServerLauncher
+                try
+                {
+                    Directory.SetCurrentDirectory(Accueil.pathToGameFolder);
+                }
+                catch (Exception exp)
+                {
+                    MessageBox.Show("Error trying to set the current directory: " + exp.Message);
+                    return;
+                }
+                #region Old code
+                //Directory.SetCurrentDirectory(Directory.GetCurrentDirectory() + "\\..\\");
+                #endregion
 
                 HashDictionary hashDictionary = new HashDictionary();
                 hashDictionary.AddHash(0x3FE03665, 0x349E2A8C, "mythloginserviceconfig.xml", 0);
@@ -497,14 +525,18 @@ namespace Launcher
                 mypHandler.GetFileTable();
 
                 FileInArchive theFile = mypHandler.SearchForFile("mythloginserviceconfig.xml");
-
+                
                 if (theFile == null)
                 {
                     MessageBox.Show("Can not find config file in data.myp");
                     return;
                 }
+                // Je Fawk | 13 April 2014 | Modified the path from the Application.StartupPath which was the \Launcher\Launcher.exe
+                if (File.Exists(Application.StartupPath.Remove(Application.StartupPath.LastIndexOf('\\')) + "\\mythloginserviceconfig.xml") == false)
 
-                if (File.Exists(Application.StartupPath + "\\mythloginserviceconfig.xml") == false)
+                #region Old code
+                //if (File.Exists(Application.StartupPath + "\\mythloginserviceconfig.xml") == false)
+                #endregion
                 {
                     MessageBox.Show("Missing file : mythloginserviceconfig.xml");
                     return;
@@ -519,10 +551,6 @@ namespace Launcher
                 Print(e.ToString());
             }
         }
-
-
-
-
 
         #endregion
     }
