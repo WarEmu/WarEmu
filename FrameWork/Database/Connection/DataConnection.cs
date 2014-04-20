@@ -348,6 +348,8 @@ namespace FrameWork
         public void CheckOrCreateTable(System.Data.DataTable table)
         {
             List<string> alterRemoveColumnDefs = new List<string>();
+            List<string> columnDefs = new List<string>();
+            List<string> alterAddColumnDefs = new List<string>();
             if (connType == ConnectionType.DATABASE_MYSQL)
             {
                 ArrayList currentTableColumns = new ArrayList();
@@ -359,7 +361,7 @@ namespace FrameWork
                         while (reader.Read())
                         {
                             currentTableColumns.Add(reader.GetString(0).ToLower());
-                            if (!table.Columns.Contains(reader.GetString(0).ToLower()))
+                            if (reader.GetString(0).ToLower() != (table.TableName + "_ID").ToLower() && !table.Columns.Contains(reader.GetString(0).ToLower()))
                                 alterRemoveColumnDefs.Add(reader.GetString(0).ToLower());
 
                             Log.Debug("DataConnecion", reader.GetString(0).ToLower());
@@ -368,6 +370,14 @@ namespace FrameWork
                         Log.Debug("DataConnecion", currentTableColumns.Count + " in table");
 
                     }, IsolationLevel.DEFAULT);
+
+                    if (!currentTableColumns.Contains((table.TableName + "_ID").ToLower()))
+                    {
+                        Log.Success("WAZA", "Creating Alter Primary Key");
+                        ExecuteNonQuery("ALTER TABLE `" + table.TableName + "` ADD `"+table.TableName+"_ID`  VARCHAR( 255 ) NOT NULL;");
+                        ExecuteNonQuery("ALTER TABLE `" + table.TableName + "` ADD PRIMARY KEY (`" + table.TableName + "_ID`);");
+                        ExecuteNonQuery("UPDATE TABLE `" + table.TableName + "` SET " + table.TableName + "_ID=UUID();");
+                    }
                 }
                 catch (Exception e)
                 {
@@ -384,8 +394,6 @@ namespace FrameWork
 
                 long IncrementSeed = 0;
 
-                 List<string> columnDefs = new List<string>();
-                 List<string> alterAddColumnDefs = new List<string>();
                 for (int i = 0; i < table.Columns.Count; i++)
                 {
                     Type systype = table.Columns[i].DataType;
@@ -561,7 +569,7 @@ namespace FrameWork
                 }
 
                 string ColumnName = table.TableName + "_ID";
-                ExecuteNonQuery("UPDATE `" + table.TableName + "` SET " + ColumnName + " = uuid() WHERE " + ColumnName + " = ''");
+                //ExecuteNonQuery("UPDATE `" + table.TableName + "` SET " + ColumnName + " = uuid() WHERE " + ColumnName + " = ''");
 
                 if (alterRemoveColumnDefs.Count > 0)
                 {

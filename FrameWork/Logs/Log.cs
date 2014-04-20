@@ -189,13 +189,36 @@ namespace FrameWork
                 Texte("D " + name, message, ConsoleColor.Gray);
         }
 
-        public static void Tcp(string name, byte[] dump, int start, int len)
+        public static bool CanDump()
         {
-            if (_config.Info.Tcp)
+            return _config.Info.Dump;
+        }
+
+        public static void Tcp(string name, MemoryStream Packet, bool Force = false)
+        {
+            if (Force || _config.Info.Tcp)
+            {
+                byte[] Buff = Packet.ToArray();
+                Texte("P " + name, Hex(Buff, 0, Buff.Length), ConsoleColor.Gray);
+            }
+        }
+
+        public static void Tcp(string name, byte[] dump, int start, int len, bool Force=false)
+        {
+            if (Force || _config.Info.Tcp)
                 Texte("P " + name, Hex(dump, start, len), ConsoleColor.Gray);
         }
 
-        public static void Dump(string name, byte[] dump , int start , int len)
+        public static void Dump(string name, MemoryStream Packet, bool Force = false)
+         {
+            if (Force || _config.Info.Dump)
+            {
+                byte[] Buff = Packet.ToArray();
+                Texte("U " + name, Hex(Buff, 0, Buff.Length), ConsoleColor.Gray);
+            }
+        }
+
+        public static void Dump(string name, byte[] dump, int start, int len, bool Force = false)
         {
             if (_config.Info.Dump)
                 Texte("U " + name, Hex(dump,start,len), ConsoleColor.Gray);

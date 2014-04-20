@@ -608,7 +608,7 @@ namespace FrameWork
                 while (reader.Read())
                 {
                     reader.GetValues(data);
-                    var id = (string)data[0];
+                    string id = data[0] == null ? "" : (string)data[0];
 
                     // fill new data object
                     var obj = Activator.CreateInstance(typeof(TObject)) as TObject;
@@ -655,7 +655,7 @@ namespace FrameWork
             }
                 , isolation);
 
-            return dataObjects.ToArray();
+            return dataObjects;
         }
 
         // Sélectionne tous les objets d'une table

@@ -182,7 +182,7 @@ namespace WorldServer
             else
                 Out.WriteByte(0);
 
-            cclient.SendTCP(Out);
+            cclient.SendPacket(Out);
         }
 
         [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_INIT_PLAYER, "onInitPlayer")]
@@ -230,7 +230,7 @@ namespace WorldServer
             {
                 PacketOut Out = new PacketOut((byte)Opcodes.S_PID_ASSIGN);
                 Out.WriteUInt16R((ushort)cclient.Id);
-                cclient.SendTCP(Out);
+                cclient.SendPacket(Out);
             }
         }
 

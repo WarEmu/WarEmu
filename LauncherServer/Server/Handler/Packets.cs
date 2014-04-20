@@ -34,7 +34,7 @@ namespace LauncherServer
             else 
                 Out.WriteByte(1);
 
-            cclient.SendTCP(Out);
+            cclient.SendPacket(Out);
         }
 
         [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.CL_CHECK, 0, "OnCheck")]
@@ -51,7 +51,7 @@ namespace LauncherServer
             {
                 Out.WriteByte((byte)CheckResult.LAUNCHER_VERSION); // Version incorrect + message
                 Out.WriteString(Program.Message);
-                client.SendTCP(Out);
+                client.SendPacket(Out);
 
                 cclient.Disconnect();
                 return;
@@ -71,7 +71,7 @@ namespace LauncherServer
             else
                 Out.WriteByte((byte)CheckResult.LAUNCHER_OK);
 
-            cclient.SendTCP(Out);
+            cclient.SendPacket(Out);
         }
 
         [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.CL_INFO, 0, "OnInfo")]
@@ -96,7 +96,7 @@ namespace LauncherServer
                     Out.WriteUInt32(Rm.DestructionCount);
                 }
 
-                cclient.SendTCP(Out);
+                cclient.SendPacket(Out);
             }
         }
     }

@@ -252,7 +252,7 @@ namespace FrameWork
             mByte = ReadByte();
             while ((mByte & 0x80) == 0x80)
             {
-                Log.Debug("readSize", "mByte = " + mByte);
+                //Log.Debug("readSize", "mByte = " + mByte);
                 mByte ^= 0x80;
                 mSize = (mSize | (mByte << (7 * mByteCount)));
 

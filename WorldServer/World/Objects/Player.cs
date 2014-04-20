@@ -325,7 +325,7 @@ namespace WorldServer
                 lock (_PacketOut)
                     _PacketOut.Add(Out);
             else
-                _Client.SendTCP(Out);
+                _Client.SendPacket(Out);
         }
         public void SendCopy(PacketOut Out)
         {
@@ -368,7 +368,7 @@ namespace WorldServer
 
             for (int i = 0; i < Outs.Length; ++i)
                 if (Outs[i] != null)
-                    _Client.SendTCP(Outs[i]);
+                    _Client.SendPacket(Outs[i]);
         }
 
         #endregion

@@ -151,11 +151,12 @@ namespace FrameWork
 
             byte[] Header = new byte[Hpos];
             byte[] ToCrypt = new byte[(packet.Length-Hpos)];
+            int i;
 
-            for (int i = 0; i < Hpos; ++i)
+            for (i = 0; i < Hpos; ++i)
                 Header[i] = Packet[i];
 
-            for (int i = Hpos; i < Packet.Length; ++i)
+            for (i = Hpos; i < Packet.Length; ++i)
                 ToCrypt[i-Hpos] = Packet[i];
             
             try
@@ -179,7 +180,7 @@ namespace FrameWork
 
             byte[] Total = new byte[Header.Length + ToCrypt.Length];
 
-            for (int i = 0; i < Total.Length; ++i)
+            for (i = 0; i < Total.Length; ++i)
             {
                 if (i < Header.Length)
                     Total[i] = Header[i];
@@ -278,10 +279,10 @@ namespace FrameWork
 
                     byte[] buffer = baseClient.ReceiveBuffer;
                     int bufferSize = baseClient.ReceiveBufferOffset + numBytes;
-                    baseClient.ReceiveBufferOffset = 0;
 
                     byte[] Packet = new byte[bufferSize];
                     Buffer.BlockCopy(buffer, 0, Packet, 0, bufferSize);
+                    baseClient.ReceiveBufferOffset = 0;
                     baseClient.OnReceive(Packet);
 
                     baseClient.BeginReceive();
@@ -369,7 +370,7 @@ namespace FrameWork
 		protected bool m_sendingTcp;
 
         // Envoi un packet
-		public void SendTCP(PacketOut packet)
+        public void SendPacket(PacketOut packet)
 		{
 			//Fix the packet size
 			packet.WritePacketLength();
@@ -380,6 +381,8 @@ namespace FrameWork
 
 			//Send the buffer
 			SendTCP(buf);
+
+            packet.Dispose();
 		}
 
 		public void SendTCP(byte[] buf)

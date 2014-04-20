@@ -51,10 +51,7 @@ namespace WorldServer
                     Out.WritePascalString(Program.Rm.Name);
                     Out.WriteByte(0);
                     Out.WriteUInt16(0);
-                    cclient.SendTCP(Out);
-                    
-
-
+                    cclient.SendPacket(Out);
                 }
             }
         }
@@ -71,7 +68,7 @@ namespace WorldServer
             Out.WriteUInt64((UInt64)TCPManager.GetTimeStamp());
             Out.WriteUInt32((UInt32)(cclient.SequenceID+1));
             Out.WriteUInt32(0);
-            cclient.SendTCP(Out);
+            cclient.SendPacket(Out);
         }
 
         public struct sEncrypt
@@ -94,7 +91,7 @@ namespace WorldServer
             {
                 PacketOut Out = new PacketOut((byte)Opcodes.F_RECEIVE_ENCRYPTKEY);
                 Out.WriteByte(1);
-                cclient.SendTCP(Out);
+                cclient.SendPacket(Out);
             }
             else if (Result.cipher == 1)
             {

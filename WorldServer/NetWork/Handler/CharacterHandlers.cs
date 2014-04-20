@@ -111,7 +111,7 @@ namespace WorldServer
 
                         PacketOut Out = new PacketOut((byte)Opcodes.F_SEND_CHARACTER_RESPONSE);
                         Out.WritePascalString(cclient._Account.Username);
-                        cclient.SendTCP(Out);
+                        cclient.SendPacket(Out);
                     }
                 }
             }
@@ -119,7 +119,7 @@ namespace WorldServer
             {
                 PacketOut Out = new PacketOut((byte)Opcodes.F_SEND_CHARACTER_ERROR);
                 Out.WritePascalString(cclient._Account.Username);
-                cclient.SendTCP(Out);
+                cclient.SendPacket(Out);
             }
         }
 
@@ -139,8 +139,9 @@ namespace WorldServer
             CharMgr.RemoveCharacter(Slot, cclient._Account.AccountId);
 
             PacketOut Out = new PacketOut((byte)Opcodes.F_SEND_CHARACTER_RESPONSE);
-            Out.WritePascalString(cclient._Account.Username);
-            cclient.SendTCP(Out);
+            Out.FillString(cclient._Account.Username, 21);
+            Out.Fill(0, 3);
+            cclient.SendPacket(Out);
         }
 
         [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_DELETE_NAME, "onDeleteName")]
@@ -165,7 +166,7 @@ namespace WorldServer
             Out.WriteByte(0);
             Out.WriteByte(0);
             Out.WriteByte(0);
-            cclient.SendTCP(Out);
+            cclient.SendPacket(Out);
         }
 
         [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_DUMP_ARENAS_LARGE, "onDumpArenasLarge")]
@@ -198,7 +199,7 @@ namespace WorldServer
             Out.WriteString("38699", 5);
             Out.WriteString("38700", 5);
             Out.WriteString("0.0.0.0", 20);
-            cclient.SendTCP(Out);
+            cclient.SendPacket(Out);
         }
 
         struct RandomNameInfo
@@ -224,7 +225,7 @@ namespace WorldServer
             for (int i = Names.Length - 1; i >= 0; --i)
                 Out.FillString(Names[i].Name, Names[i].Name.Length + 1);
 
-            cclient.SendTCP(Out);
+            cclient.SendPacket(Out);
         }
 
         [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_REQUEST_CHAR, "onRequestChar")]
@@ -240,7 +241,7 @@ namespace WorldServer
             {
                 PacketOut Out = new PacketOut((byte)Opcodes.F_REQUEST_CHAR_ERROR);
                 Out.WriteByte((byte)CharMgr.GetAccountRealm(cclient._Account.AccountId));
-                cclient.SendTCP(Out);
+                cclient.SendPacket(Out);
             }
            
             else{
@@ -257,7 +258,7 @@ namespace WorldServer
 
                  byte[] Chars = CharMgr.BuildCharactersList(cclient._Account.AccountId);
                  Out.Write(Chars, 0, Chars.Length);
-                 cclient.SendTCP(Out);
+                 cclient.SendPacket(Out);
             }
         }
 
@@ -268,7 +269,7 @@ namespace WorldServer
 
             PacketOut Out = new PacketOut((byte)Opcodes.F_REQUEST_CHAR_TEMPLATES);
             Out.Write(new byte[0x11], 0, 0x11);
-            cclient.SendTCP(Out);
+            cclient.SendPacket(Out);
         }
 
         [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_RENAME_CHARACTER, "onRenameCharacter")]
@@ -300,14 +301,14 @@ namespace WorldServer
                 // Wrong response? Perhaps needs to send F_REQUEST_CHAR_RESPONSE again.
                 PacketOut Out = new PacketOut((byte)Opcodes.F_SEND_CHARACTER_RESPONSE);
                 Out.WritePascalString(cclient._Account.Username);
-                cclient.SendTCP(Out);
+                cclient.SendPacket(Out);
             }
             else
             {
                 // Wrong response?
                 PacketOut Out = new PacketOut((byte)Opcodes.F_SEND_CHARACTER_ERROR);
                 Out.WritePascalString(cclient._Account.Username);
-                cclient.SendTCP(Out);
+                cclient.SendPacket(Out);
             }
         }
     }

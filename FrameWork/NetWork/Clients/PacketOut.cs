@@ -186,6 +186,14 @@ namespace FrameWork
                 WriteByte(b[i-1]);
         }
 
+        public virtual void WriteInt16R(Int16 val)
+        {
+            byte[] b = BitConverter.GetBytes(val);
+
+            for (int i = 0; i < b.Length; ++i)
+                WriteByte(b[i]);
+        }
+
         public virtual void WriteUInt32(uint val)
         {
             WriteByte((byte)(val >> 24));
@@ -277,23 +285,6 @@ namespace FrameWork
                 WriteByte(val);
         }
 
-        public virtual void WriteHexStringBytes(string hexString)
-        {
-
-
-            int length = hexString.Length / 2;
-
-            if ((length & 1) == 0)
-            {
-                for (int i = 0; i < length; i++)
-                    WriteByte(Convert.ToByte(hexString.Substring(i * 2, 2), 16));
-            }
-            else
-            {
-                WriteByte(0);
-            }
-        }
-
         public virtual void WritePascalString(string str)
         {
             if (str == null || str.Length <= 0)
@@ -315,7 +306,7 @@ namespace FrameWork
             }
             else
             {
-                byte[] bytes = Encoding.ASCII.GetBytes(str);
+                byte[] bytes = Encoding.GetEncoding("iso-8859-1").GetBytes(str);
                 WriteByte((byte)(bytes.Length + 1));
                 Write(bytes, 0, bytes.Length);
             }
@@ -410,6 +401,35 @@ namespace FrameWork
             WriteFloat(Quat.Y);
             WriteFloat(Quat.Z);
             WriteFloat(Quat.W);
+        }
+
+        public virtual void WriteHexStringBytes(string hexString)
+        {
+            int length = hexString.Length / 2;
+
+            if ((hexString.Length % 2) == 0)
+            {
+                for (int i = 0; i < length; i++)
+                    WriteByte(Convert.ToByte(hexString.Substring(i * 2, 2), 16));
+            }
+            else
+            {
+                WriteByte(0);
+            }
+        }
+
+        public virtual void WritePacketString(string packet)
+        {
+            packet = packet.Replace(" ", string.Empty);
+
+            using (StringReader Reader = new StringReader(packet))
+            {
+                string Line;
+                while ((Line = Reader.ReadLine()) != null)
+                {
+                    WriteHexStringBytes(Line.Substring(1, Line.IndexOf("|", 2)-1));
+                }
+            }
         }
 
         public override string ToString()
