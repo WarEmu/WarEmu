@@ -88,6 +88,7 @@
     <Compile Include="Database\GameData.cs" />
     <Compile Include="Database\SystemData.cs" />
     <Compile Include="Database\World\Ability\AbilityInfo.cs" />
+    <Compile Include="Database\World\Ability\AbilityStats.cs" />
     <Compile Include="Database\World\Chapters\Chapter_Info.cs" />
     <Compile Include="Database\World\Chapters\Chapter_Reward.cs" />
     <Compile Include="Database\World\Characters\CharacterInfo.cs" />
@@ -99,10 +100,12 @@
     <Compile Include="Database\World\Creatures\Creature_spawn.cs" />
     <Compile Include="Database\World\Creatures\Creature_text.cs" />
     <Compile Include="Database\World\Creatures\Creature_vendor.cs" />
+    <Compile Include="Database\World\GameMaster\GMCommandLog.cs" />
     <Compile Include="Database\World\GameObjects\GameObject_proto.cs" />
     <Compile Include="Database\World\GameObjects\GameObject_spawn.cs" />
     <Compile Include="Database\World\Items\Item_Info.cs" />
     <Compile Include="Database\World\Characters\Random_names.cs" />
+    <Compile Include="Database\World\Items\Mount_Info.cs" />
     <Compile Include="Database\World\Levels\Renown_Info.cs" />
     <Compile Include="Database\World\Chapters\Tok_Info.cs" />
     <Compile Include="Database\World\Levels\Xp_Info.cs" />
@@ -117,6 +120,8 @@
     <Compile Include="Database\World\Quests\Quests_Creature_Starter.cs" />
     <Compile Include="Database\World\Quests\Quests_Objectives.cs" />
     <Compile Include="Database\World\Maps\Zone_Info.cs" />
+    <Compile Include="Database\World\TimedAnnounce.cs" />
+    <Compile Include="Database\World\Waypoint.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Rpc\AccountMgr.cs" />
   </ItemGroup>

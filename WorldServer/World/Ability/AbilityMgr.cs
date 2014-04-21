@@ -76,7 +76,7 @@ namespace WorldServer
 
             foreach (Ability_Info Info in Infos)
             {
-                if (!HasAbilityHandler(Info.AbilityType))
+                /*if (!HasAbilityHandler(Info.AbilityType))
                 {
                     Log.Debug("AbilityMgr", "Ability Type of : " + Info.Entry + " do not exist : " + Info.AbilityType);
                     ++Error;
@@ -95,7 +95,7 @@ namespace WorldServer
                         _CareerAbility.Add(Info.CareerLine, new List<Ability_Info>());
 
                     _CareerAbility[Info.CareerLine].Add(Info);
-                }
+                }*/
             }
 
             if (Error > 0)
@@ -107,16 +107,16 @@ namespace WorldServer
         static public Ability_Info GetAbilityInfo(UInt16 AbilityEntry,byte Level)
         {
             Ability_Info Info = null;
-            if (_AbilityInfos.ContainsKey(AbilityEntry))
-                Info = _AbilityInfos[AbilityEntry].Find(info => info.Level == Level);
+            //if (_AbilityInfos.ContainsKey(AbilityEntry))
+            //    Info = _AbilityInfos[AbilityEntry].Find(info => info.Level == Level);
             return Info;
         }
 
         static public List<Ability_Info> GetCareerAbility(byte CareerLine, byte Level)
         {
             List<Ability_Info> Abilities = new List<Ability_Info>();
-            if (_CareerAbility.ContainsKey(CareerLine))
-                Abilities.AddRange(_CareerAbility[CareerLine].FindAll(info => info.Level <= Level));
+            //if (_CareerAbility.ContainsKey(CareerLine))
+            //    Abilities.AddRange(_CareerAbility[CareerLine].FindAll(info => info.Level <= Level));
             return Abilities;
         }
 

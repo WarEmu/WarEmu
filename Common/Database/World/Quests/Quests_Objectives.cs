@@ -35,7 +35,7 @@ namespace Common
     };
 
     // Valeur Fixe d'un character
-    [DataTable(PreCache = false, TableName = "Quests_Objectives", DatabaseName = "World")]
+    [DataTable(PreCache = false, TableName = "quests_objectives", DatabaseName = "World")]
     [Serializable]
     public class Quest_Objectives : DataObject
     {

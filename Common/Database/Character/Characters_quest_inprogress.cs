@@ -27,7 +27,7 @@ namespace Common
     public class Character_quest_inprogress : DataObject
     {
         [DataElement(AllowDbNull = false)]
-        public int CharacterID;
+        public UInt32 CharacterID;
 
         [DataElement(AllowDbNull = false)]
         public UInt16 QuestID;

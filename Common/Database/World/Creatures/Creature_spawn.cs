@@ -25,7 +25,7 @@ using FrameWork;
 namespace Common
 {
     // Valeur Fixe d'un character
-    [DataTable(PreCache = false, TableName = "Creature_spawns", DatabaseName = "World")]
+    [DataTable(PreCache = false, TableName = "creature_spawns", DatabaseName = "World")]
     [Serializable]
     public class Creature_spawn : DataObject
     {
@@ -34,10 +34,10 @@ namespace Common
         private uint _Guid;
         private uint _Entry;
         private ushort _ZoneId;
-        private int _WorldX;
-        private int _WorldY;
-        private int _WorldZ;
-        private int _WorldO;
+        public int _WorldX;
+        public int _WorldY;
+        public int _WorldZ;
+        public int _WorldO;
         private string _Bytes;
         private byte _Icone;
         private byte _Emote;
@@ -128,6 +128,8 @@ namespace Common
             set { _Faction = value; Dirty = true; }
         }
 
+        [DataElement()]
+        public byte WaypointType = 0; // 0 = Loop Start->End->Start, 1 = Start->End, 2 = Random
 
         public byte[] bBytes
         {

@@ -7,7 +7,7 @@ using FrameWork;
 
 namespace Common
 {
-    [DataTable(PreCache = false, TableName = "Zone_Jumps", DatabaseName = "World")]
+    [DataTable(PreCache = false, TableName = "zone_jumps", DatabaseName = "World")]
     [Serializable]
     public class Zone_Jump : DataObject
     {
@@ -24,10 +24,10 @@ namespace Common
         public uint WorldY;
 
         [DataElement(AllowDbNull = false)]
-        public UInt16 WorldZ;
+        public ushort WorldZ;
 
         [DataElement(AllowDbNull = false)]
-        public UInt16 WorldO;
+        public ushort WorldO;
 
         public Zone_Info ZoneInfo;
     }

@@ -24,7 +24,7 @@ namespace WorldServer
         {
             this.Info = Info;
             this.Caster = Caster;
-            Handler = AbilityMgr.GetAbilityHandler(Info.AbilityType);
+            //Handler = AbilityMgr.GetAbilityHandler(Info.AbilityType);
         }
 
         public void Update()

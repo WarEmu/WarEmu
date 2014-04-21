@@ -156,7 +156,7 @@ namespace WorldServer
         public Dictionary<int, Character_quest> _Quests = new Dictionary<int, Character_quest>();
         public Dictionary<int, Character_quest_inprogress> _InProgressQuests = new Dictionary<int, Character_quest_inprogress>();
 
-        public void Load(Character_quest[] Quests)
+        public void Load(List<Character_quest> Quests)
         {
             if (Quests == null)
                 return;
@@ -283,7 +283,7 @@ namespace WorldServer
             Character_quest CQuest = new Character_quest();
             CQuest.QuestID = Quest.Entry;
             CQuest.Done = false;
-            CQuest.CharacterID = GetPlayer().CharacterId;
+            CQuest.CharacterId = GetPlayer().CharacterId;
             CQuest.Quest = Quest;
 
             // F_QUEST_LIST Quests not done

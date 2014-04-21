@@ -41,9 +41,9 @@ namespace WorldServer
 
             return true;
         }
-        public int RemoveCharacter(byte Slot)
+        public UInt32 RemoveCharacter(byte Slot)
         {
-            int CharacterId = -1;
+            UInt32 CharacterId = 0;
             if (_Chars[Slot] != null)
                 CharacterId = _Chars[Slot].CharacterId;
 
@@ -169,17 +169,32 @@ namespace WorldServer
         [LoadingFunction(true)]
         static public void LoadCharacters()
         {
-            Character[] Chars = Database.SelectAllObjects<Character>().ToArray();
+            List<Character> Chars = Database.SelectAllObjects<Character>() as List<Character>;
+            List<Character_value> Values = Database.SelectAllObjects<Character_value>() as List<Character_value>;
+            List<Character_social> Socials = Database.SelectAllObjects<Character_social>() as List<Character_social>;
+            List<Character_tok> Toks = Database.SelectAllObjects<Character_tok>() as List<Character_tok>;
+            List<Character_quest> Quests = Database.SelectAllObjects<Character_quest>() as List<Character_quest>;
+            List<Characters_influence> Influences = Database.SelectAllObjects<Characters_influence>() as List<Characters_influence>;
 
+            int Count = 0;
             foreach (Character Char in Chars)
-                AddChar(Char);
+            {
+                Char.Value = Values.Find(info => info.CharacterId == Char.CharacterId);
+                Char.Socials = Socials.FindAll(info => info.CharacterId == Char.CharacterId);
+                Char.Toks = Toks.FindAll(info => info.CharacterId == Char.CharacterId);
+                Char.Quests = Quests.FindAll(info => info.CharacterId == Char.CharacterId);
+                Char.Influences = Influences.FindAll(info => info.CharacterId == Char.CharacterId);
 
-            Log.Success("LoadCharacters", Chars.Length + "  : Character(s) loaded");
+                AddChar(Char);
+                ++Count;
+            }
+
+            Log.Success("LoadCharacters", Count + "  : Character(s) loaded");
         }
 
-        static public int GenerateMaxCharId()
+        static public UInt32 GenerateMaxCharId()
         {
-            return System.Threading.Interlocked.Increment(ref MAX_CHAR_GUID);
+            return (UInt32)System.Threading.Interlocked.Increment(ref MAX_CHAR_GUID);
         }
         static public bool CreateChar(Character Char)
         {
@@ -190,7 +205,7 @@ namespace WorldServer
 
             lock (_Chars)
             {
-                int Id = GenerateMaxCharId();
+                UInt32 Id = GenerateMaxCharId();
 
                 while (_Chars[Id] != null)
                     Id = GenerateMaxCharId();
@@ -217,7 +232,7 @@ namespace WorldServer
                 GetAccountChar(Char.AccountId).AddChar(Char);
 
                 if (Char.CharacterId > MAX_CHAR_GUID)
-                    MAX_CHAR_GUID = Char.CharacterId;
+                    MAX_CHAR_GUID = (int)Char.CharacterId;
             }
         }
         static public Character[] GetAccountCharacters(int AccountId)
@@ -249,102 +264,85 @@ namespace WorldServer
         }
 
 
-        public static byte[] BuildCharactersList(int AccountId)
+        public static byte[] BuildCharacters(int AccountId)
         {
-            Log.Debug("BuildCharactersList", "AcocuntId = " + AccountId);
+            Log.Debug("BuildCharacters", "AcocuntId = " + AccountId);
+
             Character[] Chars = GetAccountChar(AccountId)._Chars;
-            int count = 0;
+            UInt16 Count = 0;
+
+            // On Compte le nombre de personnages existant du joueur
+            for (UInt16 c = 0; c < Chars.Length; ++c)
+                if (Chars[c] != null) ++Count;
 
             PacketOut Out = new PacketOut(0);
             Out.Position = 0;
 
+            Out.WriteByte(MAX_SLOT);
+            Out.WriteUInt32(0xFF);
+            Out.WriteByte(0x14);
+
             Character Char = null;
-            for (int k = 0; k < MAX_SLOT; ++k)
+            for (int i = 0; i < MAX_SLOT; ++i)
             {
-                Char = Chars[k];
-                if (Char != null)
+                Char = Chars[i];
+
+                if (Char == null)
+                    Out.Fill(0, 284); // 284
+                else
                 {
-                    List<Character_items> Items = CharMgr.GetItemChar(Char.CharacterId);
+                    List<Character_item> Items = CharMgr.GetItemChar(Char.CharacterId);
 
-                    /****  char slot start ****/
-                    Out.FillString(Char.Name, 48); // name
-                    Out.WriteByte(Char.Value[0].Level); // Level
-                    Out.WriteByte(Char.Career); //career
-                    Out.WriteByte(Char.Realm); // realm
-                    Out.WriteByte(Char.Sex); // gender
-                    Out.WriteUInt16R(Char.ModelId); //model id
-                    Out.WriteUInt16R(Char.Value[0].ZoneId); // zone id
-                    Out.Fill(0, 12); // unk
+                    Out.FillString(Char.Name, 48);
+                    Out.WriteByte(Char.Value.Level);
+                    Out.WriteByte(Char.Career);
+                    Out.WriteByte(Char.Realm);
+                    Out.WriteByte(Char.Sex);
+                    Out.WriteByte(Char.ModelId);
+                    Out.WriteUInt16(Char.Value.ZoneId);
+                    Out.Fill(0, 5);
 
-                    Character_items Item = null;
+                    Character_item Item = null;
                     for (UInt16 SlotId = 14; SlotId < 30; ++SlotId)
                     {
                         Item = Items.Find(item => item != null && item.SlotId == SlotId);
-
-                        if (Item == null)
-                        {
-                            Out.WriteInt32(0);
-                            Out.WriteInt32(0);
-                        }
-                        else
-                        {
-
-                            Out.WriteInt32((int)Item.ModelId);
-                            Out.WriteUInt16R(0); // primary dye
-                            Out.WriteUInt16R(0); // secondary dye
-                        }
-                    }
-                    Out.WriteUInt32(0x00); // 0x00000000
-                    for (int i = 0; i < 4; i++)
-                    {
-                        Out.WriteUInt32(0xFF000000);
-                        Out.WriteUInt32(0x00);
-                    }
-                    Out.WriteUInt32(0xFF000000);
-
-                    //weapons
-                    for (UInt16 SlotId = 10; SlotId < 13; ++SlotId)
-                    {
-                        Item = Items.Find(item => item != null && item.SlotId == SlotId);
-
                         if (Item == null)
                             Out.WriteUInt32(0);
                         else
-                        {
-                            Out.WriteUInt16R((ushort)Item.ModelId);
-                            Out.WriteUInt16(0);
-                        }
+                            Out.WriteUInt32R(Item.ModelId);
+
+                        Out.Fill(0, 4);
                     }
-                    Out.Fill(0, 8);
+
+                    Out.Fill(0, 6);
+
+                    for (int j = 0; j < 5; ++j)
+                    {
+                        Out.Fill(0, 6);
+                        Out.WriteUInt16(0xFF00);
+                    }
+
+                    for (UInt16 SlotId = 10; SlotId < 13; ++SlotId)
+                    {
+                        Item = Items.Find(item => item != null && item.SlotId == SlotId);
+                        Out.WriteUInt16(0);
+                        if (Item == null)
+                            Out.WriteUInt16(0);
+                        else
+                            Out.WriteUInt16R((ushort)Item.ModelId);
+                    }
+
+
+                    Out.Fill(0, 10);
                     Out.WriteUInt16(0xFF00);
                     Out.WriteByte(0);
-                    Out.WriteByte(Char.Race); // char slot position
-                    Out.WriteUInt16(0x00); //unk
-
-                   /* //Traits [8 bytes]
-                    Out.WriteByte(1); //face
-                    Out.WriteByte(4); //jewel   
-                    Out.WriteByte(4); //scar   
-                    Out.WriteByte(0); //hair
-                    Out.WriteByte(3); //hair color   
-                    Out.WriteByte(2); //skin color
-                    Out.WriteByte(0); //eye color
-                    Out.WriteByte(5); //metal color
-                    */
+                    Out.WriteByte(Char.Race);
+                    Out.WriteUInt16(0);
                     Out.Write(Char.bTraits, 0, Char.bTraits.Length);
-
-                    Out.Fill(0, 14); //unk
-
-                    count++;
+                    Out.Fill(0, 14);// 272
                 }
             }
-
-            for (int i = 0; i < (MAX_SLOT - count); ++i)
-                Out.Write(new byte[284], 0, 284);
-
             return Out.ToArray();
-
-
         }
 
         static public GameData.Realms GetAccountRealm(int AccountId)
@@ -353,7 +351,7 @@ namespace WorldServer
         }
         static public void RemoveCharacter(byte Slot, int AccountId)
         {
-            int CharacterId = GetAccountChar(AccountId).RemoveCharacter(Slot);
+            UInt32 CharacterId = GetAccountChar(AccountId).RemoveCharacter(Slot);
 
             lock(_Chars)
                 if (CharacterId >= 0 &&_Chars[CharacterId] != null)
@@ -382,35 +380,35 @@ namespace WorldServer
         #region CharacterItems
 
         static public long MAX_ITEMS = 600000;
-        static public Character_items[] _Items;
-        static public Dictionary<int,List<Character_items>> _CharItems = new Dictionary<int,List<Character_items>>();
+        static public Character_item[] _Items;
+        static public Dictionary<UInt32, List<Character_item>> _CharItems = new Dictionary<UInt32, List<Character_item>>();
 
         [LoadingFunction(true)]
         static public void LoadItems()
         {
-            _Items = new Character_items[MAX_ITEMS];
-            IList<Character_items> Items = Database.SelectAllObjects<Character_items>();
+            _Items = new Character_item[MAX_ITEMS];
+            IList<Character_item> Items = Database.SelectAllObjects<Character_item>();
 
             if(Items != null)
                 lock (_Items)
-                    foreach (Character_items Itm in Items)
+                    foreach (Character_item Itm in Items)
                         LoadItem(Itm);
 
             Log.Success("LoadItems",Items.Count + " : Characters items loaded");
         }
-        static public void LoadItem(Character_items CharItem)
+        static public void LoadItem(Character_item CharItem)
         {
             lock (_Items)
             {
                 _Items[CharItem.Guid] = CharItem;
 
                 if (!_CharItems.ContainsKey(CharItem.CharacterId))
-                    _CharItems.Add(CharItem.CharacterId, new List<Character_items>() { CharItem });
+                    _CharItems.Add(CharItem.CharacterId, new List<Character_item>() { CharItem });
                 else
                     _CharItems[CharItem.CharacterId].Add(CharItem);
             }
         }
-        static public void DeleteItem(Character_items Itm)
+        static public void DeleteItem(Character_item Itm)
         {
             Log.Info("DeleteItem", "Guid=" + Itm.Guid + ",CharId=" + Itm.CharacterId);
 
@@ -425,18 +423,18 @@ namespace WorldServer
             CharMgr.Database.DeleteObject(Itm);
         }
 
-        static public List<Character_items> GetItemChar(int CharacterId)
+        static public List<Character_item> GetItemChar(UInt32 CharacterId)
         {
             lock (_Items)
             {
                 if (_CharItems.ContainsKey(CharacterId))
                     return _CharItems[CharacterId];
                 else
-                    return new List<Character_items>();
+                    return new List<Character_item>();
             }
         }
 
-        static public bool CreateItem(Character_items Item)
+        static public bool CreateItem(Character_item Item)
         {
             lock(_Items)
                 for(long i=0;i<_Items.Length;++i)
@@ -452,7 +450,7 @@ namespace WorldServer
             Log.Error("CreateItem", "Maximum number of items reaches !");
             return false;
         }
-        static public void RemoveItemsChar(int CharacterId)
+        static public void RemoveItemsChar(UInt32 CharacterId)
         {
             lock (_Items)
             {
@@ -466,9 +464,9 @@ namespace WorldServer
                 _CharItems.Remove(CharacterId);
             }
         }
-        static public void SaveItems(int CharacterId,Item[] CItems)
+        static public void SaveItems(UInt32 CharacterId, Item[] CItems)
         {
-            List<Character_items> CItem = new List<Character_items>();
+            List<Character_item> CItem = new List<Character_item>();
             for (UInt16 i = 0; i < CItems.Length; ++i)
                 if(CItems[i] != null)
                     CItem.Add(CItems[i].Save(CharacterId));
@@ -507,7 +505,7 @@ namespace WorldServer
 
             Log.Success("LoadMails", "Loaded " + count + " Character_mails");
         }
-        static public IList<Character_mail> GetCharMail(int characterId)
+        static public IList<Character_mail> GetCharMail(UInt32 characterId)
         {
             IList<Character_mail> Mails = Database.SelectObjects<Character_mail>(string.Format("CharacterId = {0}", characterId));
 
@@ -515,7 +513,7 @@ namespace WorldServer
                 foreach (Character_mail Mail in Mails)
                     foreach (uint Guid in Mail.ItemsReq)
                     {
-                        Character_items Req = _Items[Guid];
+                        Character_item Req = _Items[Guid];
                         if (Req != null)
                             Mail.ItemsReqInfo.Add(Req);
                     }

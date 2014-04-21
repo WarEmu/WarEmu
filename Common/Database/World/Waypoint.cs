@@ -1,4 +1,6 @@
 ﻿/*
+ * Copyright (C) 2013 APS
+ *	http://AllPrivateServer.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,64 +27,62 @@ using FrameWork;
 namespace Common
 {
     // Valeur Fixe d'un character
-    [DataTable(PreCache = false, TableName = "gameobject_spawns", DatabaseName = "World")]
+    [DataTable(PreCache = false, TableName = "waypoints", DatabaseName = "World")]
     [Serializable]
-    public class GameObject_spawn : DataObject
+    public class Waypoint : DataObject
     {
-        public GameObject_proto Proto;
-
-        [PrimaryKey(AutoIncrement=true)]
-        public uint Guid;
-
-        [DataElement()]
-        public uint Entry;
+        static public byte Loop = 0;
+        static public byte StartToEnd = 1;
+        static public byte Random = 2;
 
         [DataElement()]
-        public ushort ZoneId;
+        public uint GUID;
 
         [DataElement()]
-        public int WorldX;
+        public uint CreatureSpawnGUID;
 
         [DataElement()]
-        public int WorldY;
+        public uint GameObjectSpawnGUID;
 
         [DataElement()]
-        public int WorldZ;
+        public ushort X;
 
         [DataElement()]
-        public int WorldO;
+        public ushort Y;
 
         [DataElement()]
-        public uint DisplayID;
-
-        [DataElement(AllowDbNull = true)]
-        public UInt16[] Unks = new UInt16[6];
-
-        public UInt16 GetUnk(int Id)
-        {
-            if (Id >= Unks.Length)
-                return 0;
-
-            return Unks[Id];
-        }
+        public ushort Z;
 
         [DataElement()]
-        public byte Unk1;
+        public ushort O;
 
         [DataElement()]
-        public byte Unk2;
+        public ushort Speed = 100;
 
         [DataElement()]
-        public UInt32 Unk3;
+        public byte EmoteOnStart;
 
         [DataElement()]
-        public UInt32 Unk4;
+        public byte EmoteOnEnd;
 
-        public void BuildFromProto(GameObject_proto Proto)
-        {
-            this.Proto = Proto;
-            Unks = Proto.Unks;
-            DisplayID = Proto.DisplayID;
-        }
+        [DataElement()]
+        public uint WaitAtEndMS;
+
+        [DataElement()]
+        public ushort EquipOnStart;
+
+        [DataElement()]
+        public ushort EquipOnEnd;
+
+        [DataElement()]
+        public string TextOnStart;
+
+        [DataElement()]
+        public string TextOnEnd;
+
+        [DataElement()]
+        public UInt32 NextWaypointGUID;
+
+        public Waypoint NextWaypoint;
     }
 }

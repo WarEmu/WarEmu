@@ -24,12 +24,12 @@ using FrameWork;
 
 namespace Common
 {
-    [DataTable(PreCache = false, TableName = "Tok_Infos", DatabaseName = "World")]
+    [DataTable(PreCache = false, TableName = "tok_infos", DatabaseName = "World")]
     [Serializable]
     public class Tok_Info : DataObject
     {
         [PrimaryKey()]
-        public uint Entry;
+        public ushort Entry;
 
         [DataElement(Varchar = 255)]
         public string Name;

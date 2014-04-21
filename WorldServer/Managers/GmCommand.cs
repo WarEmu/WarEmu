@@ -456,7 +456,7 @@ namespace WorldServer
             if (Tok == null || Chapter == null)
                 return false;
 
-            Chapter.TokEntry = (UInt32)TokEntry;
+            Chapter.TokEntry = (ushort)TokEntry;
             Chapter.Dirty = true;
             WorldMgr.Database.SaveObject(Chapter);
 
@@ -675,7 +675,7 @@ namespace WorldServer
         {
             string XpMode = "XpMode Off";
             string XpMode2 = "XpMode On";
-            int CharacterId = Plr.GetPlayer().CharacterId;
+            UInt32 CharacterId = Plr.GetPlayer().CharacterId;
             Player Target = Player.GetPlayer(CharacterId);
             Target = Plr;
 

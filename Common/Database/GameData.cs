@@ -568,13 +568,13 @@ namespace GameData
 
     public enum TargetTypes
     {
-        TARGETTYPES_TARGET_SELF = 1,
-        TARGETTYPES_TARGET_GROUND = 6,
         TARGETTYPES_TARGET_NONE = 0,
-        TARGETTYPES_TARGET_GROUP = 4,
+        TARGETTYPES_TARGET_SELF = 1,
         TARGETTYPES_TARGET_ENEMY = 2,
-        TARGETTYPES_TARGET_PET = 5,
         TARGETTYPES_TARGET_ALLY = 3,
+        TARGETTYPES_TARGET_GROUP = 4,
+        TARGETTYPES_TARGET_PET = 5,
+        TARGETTYPES_TARGET_GROUND = 6,
     };
 
     public enum CombatEvent

@@ -50,7 +50,7 @@ namespace WorldServer
 
         // Player Uniquement
         public Item_Info Info;
-        public Character_items CharItem = null;
+        public Character_item CharItem = null;
 
         public Item(Object Owner)
         {
@@ -64,7 +64,7 @@ namespace WorldServer
             _Count = 1;
         }
 
-        public bool Load(Character_items Item)
+        public bool Load(Character_item Item)
         {
             if (Item == null)
                 return false;
@@ -114,9 +114,9 @@ namespace WorldServer
                 CharMgr.DeleteItem(CharItem);
         }
 
-        public Character_items Create(int CharacterId)
+        public Character_item Create(UInt32 CharacterId)
         {
-            CharItem = new Character_items();
+            CharItem = new Character_item();
             CharItem.CharacterId = CharacterId;
             CharItem.Counts = _Count;
             CharItem.Entry = Info.Entry;
@@ -126,7 +126,7 @@ namespace WorldServer
 
             return CharItem;
         }
-        public Character_items Save(int CharacterId)
+        public Character_item Save(UInt32 CharacterId)
         {
             if (CharItem != null)
             {

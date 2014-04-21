@@ -93,12 +93,12 @@ namespace WorldServer
 
             base.Load();
         }
-        public void Load(List<Character_items> NItems)
+        public void Load(List<Character_item> NItems)
         {
             if (IsLoad)
                 return;
 
-            foreach(Character_items Item in NItems)
+            foreach(Character_item Item in NItems)
                 if (Item.SlotId < Items.Length && Item.SlotId >= 0)
                 {
                     Item Itm = new Item(Obj);

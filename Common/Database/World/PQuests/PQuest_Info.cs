@@ -24,7 +24,7 @@ using FrameWork;
 
 namespace Common
 {
-    [DataTable(PreCache = false, TableName = "PQuest_Info", DatabaseName = "World")]
+    [DataTable(PreCache = false, TableName = "pquest_info", DatabaseName = "World")]
     [Serializable]
     public class PQuest_Info : DataObject
     {

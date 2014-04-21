@@ -196,8 +196,8 @@ namespace WorldServer
 
             if (!Plr.IsInWorld()) // Si le joueur n'est pas sur une map, alors on l'ajoute a la map
             {
-                UInt16 ZoneId = Plr._Info.Value[0].ZoneId;
-                ushort RegionId = (ushort)Plr._Info.Value[0].RegionId;
+                UInt16 ZoneId = Plr._Info.Value.ZoneId;
+                ushort RegionId = (ushort)Plr._Info.Value.RegionId;
                 RegionMgr Region = WorldMgr.GetRegion(RegionId, true);
                 Region.AddObject(Plr, ZoneId);
             }

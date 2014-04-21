@@ -7,7 +7,7 @@ using FrameWork;
 
 namespace Common
 {
-    [DataTable(PreCache = false, TableName = "Character_influences", DatabaseName = "Characters")]
+    [DataTable(PreCache = false, TableName = "character_influences", DatabaseName = "Characters")]
     [Serializable]
     public class Characters_influence : DataObject
     {

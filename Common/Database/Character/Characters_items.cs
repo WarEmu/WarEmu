@@ -25,18 +25,19 @@ using FrameWork;
 namespace Common
 {
     // Valeur Fixe d'un character
-    [DataTable(PreCache = false, TableName = "Characters_items", DatabaseName = "Characters")]
+    [DataTable(PreCache = false, TableName = "characters_items", DatabaseName = "Characters")]
     [Serializable]
-    public class Character_items : DataObject
+    public class Character_item : DataObject
     {
         private long _Guid;
-        private int _CharacterId;
+        private UInt32 _CharacterId;
         private uint _Entry;
         private UInt16 _SlotId;
         private uint _ModelId;
         private UInt16 _Counts;
+        public List<UInt32> _Talismans = new List<uint>();
 
-        public Character_items()
+        public Character_item()
             : base()
         {
 
@@ -50,7 +51,7 @@ namespace Common
         }
 
         [DataElement(AllowDbNull = false)]
-        public int CharacterId
+        public UInt32 CharacterId
         {
             get { return _CharacterId; }
             set { _CharacterId = value; Dirty = true; }
@@ -82,6 +83,28 @@ namespace Common
         {
             get { return _Counts; }
             set { _Counts = value; Dirty = true; }
+        }
+
+        [DataElement(Varchar = 255)]
+        public string Talismans
+        {
+            get
+            {
+                string Str = "";
+                foreach (UInt32 Entry in _Talismans)
+                    Str += Entry + ";";
+                return Str;
+            }
+            set
+            {
+                string[] Split = value.Split(';');
+                _Talismans.Clear();
+                foreach (string Str in Split)
+                {
+                    if(Str.Length > 0)
+                        _Talismans.Add(UInt32.Parse(Str));
+                }
+            }
         }
     }
 }

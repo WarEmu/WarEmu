@@ -26,9 +26,23 @@ namespace Common
 {
     public class Character_Objectives
     {
+        public Character_quest Quest;
         public Quest_Objectives Objective;
         public int ObjectiveID;
-        public int Count;
+        public int _Count;
+
+        public int Count
+        {
+            get
+            {
+                return _Count;
+            }
+            set
+            {
+                _Count = value;
+                Quest.Dirty = true;
+            }
+        }
 
         public bool IsDone()
         {
@@ -40,12 +54,12 @@ namespace Common
     }
 
     // Valeur Fixe d'un character
-    [DataTable(PreCache = false, TableName = "Characters_quests", DatabaseName = "Characters")]
+    [DataTable(PreCache = false, TableName = "characters_quests", DatabaseName = "Characters")]
     [Serializable]
     public class Character_quest : DataObject
     {
         [DataElement(AllowDbNull = false)]
-        public int CharacterID;
+        public UInt32 CharacterId;
 
         [DataElement(AllowDbNull = false)]
         public UInt16 QuestID;
@@ -76,8 +90,9 @@ namespace Common
                     int Count = int.Parse(Obj.Split(':')[1]);
 
                     Character_Objectives CObj = new Character_Objectives();
+                    CObj.Quest = this;
                     CObj.ObjectiveID = ObjectiveID;
-                    CObj.Count = Count;
+                    CObj._Count = Count;
                     _Objectives.Add(CObj);
                 }
             }

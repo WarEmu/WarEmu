@@ -18,7 +18,7 @@ namespace WorldServer
 
         }
 
-        public void Load(Character_tok[] Toks)
+        public void Load(List<Character_tok> Toks)
         {
             if(Toks != null)
                 foreach (Character_tok Tok in Toks)
@@ -30,7 +30,7 @@ namespace WorldServer
         {
             return _Toks.ContainsKey(Entry);
         }
-        public void AddTok(UInt32 Entry)
+        public void AddTok(ushort Entry)
         {
             if (HasTok(Entry))
                 return;
@@ -40,17 +40,16 @@ namespace WorldServer
             if (Info == null)
                 return;
 
-            SendTok(Entry,true);
+            SendTok(Entry, true);
 
             Character_tok Tok = new Character_tok();
             Tok.TokEntry = Entry;
             Tok.CharacterId = GetPlayer().CharacterId;
             Tok.Count = 1;
-            Tok.Dirty = true;
 
             _Toks.Add(Entry, Tok);
             GetPlayer().AddXp(Info.Xp);
-            GetPlayer()._Info.Toks = _Toks.Values.ToArray();
+            GetPlayer()._Info.Toks = _Toks.Values.ToList();
 
             CharMgr.Database.AddObject(Tok);
         }

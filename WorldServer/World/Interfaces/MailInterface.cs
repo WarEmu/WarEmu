@@ -170,7 +170,7 @@ namespace WorldServer
             if(Mail.ItemsReqInfo.Count > 8)
                 Out.WriteByte(0);
                 
-            foreach(Character_items item in Mail.ItemsReqInfo)
+            foreach(Character_item item in Mail.ItemsReqInfo)
             {
                 Out.WriteUInt32(item.ModelId);
             }
@@ -290,7 +290,7 @@ namespace WorldServer
             Out.WriteStringBytes(Mail.Content);
             Out.WriteByte(0);
             Out.WriteByte((byte)Mail.ItemsReqInfo.Count);
-            foreach (Character_items item in Mail.ItemsReqInfo)
+            foreach (Character_item item in Mail.ItemsReqInfo)
             {
                 Item_Info Req = WorldMgr.GetItem_Info(item.Entry);
                 Item.BuildItem(ref Out, null, Req, 0, item.Counts);

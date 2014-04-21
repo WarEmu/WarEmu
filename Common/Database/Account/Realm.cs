@@ -24,7 +24,7 @@ using FrameWork;
 
 namespace Common
 {
-    [DataTable(PreCache = false, TableName = "Realms", DatabaseName = "Accounts")]
+    [DataTable(PreCache = false, TableName = "realms", DatabaseName = "Accounts")]
     [Serializable]
     public class Realm : DataObject
     {
@@ -191,10 +191,28 @@ namespace Common
             set { _Status = value; Dirty = true; }
         }
 
+        [DataElement(AllowDbNull=false)]
+        public byte Online;
+
+        [DataElement()]
+        public DateTime OnlineDate;
+
+        [DataElement()]
         public uint OnlinePlayers;
-
+ 
+        [DataElement()]
         public uint OrderCount;
-
+ 
+        [DataElement()]
         public uint DestructionCount;
+
+        [DataElement()]
+        public uint MaxPlayers;
+
+        [DataElement()]
+        public uint OrderCharacters;
+
+        [DataElement()]
+        public uint DestruCharacters;
     }
 }

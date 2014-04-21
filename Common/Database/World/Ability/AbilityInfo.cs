@@ -24,41 +24,122 @@ using FrameWork;
 
 namespace Common
 {
-    [DataTable(PreCache = false, TableName = "Ability_Infos", DatabaseName = "World")]
+    [Flags]
+    public enum AbilityFlags : ushort
+    {
+        StatsBuff = 1,
+        Buff = 2,
+        Healing = 4,
+        Defensive = 8,
+        Granted = 16,
+        Debuff = 32,
+        Channeled = 64,
+        Offensive = 128,
+        NeedsPet = 256,
+        Passive = 512,
+        Damaging = 1024,
+    }
+
+    [DataTable(PreCache = false, TableName = "Ability_infos", DatabaseName = "World")]
     [Serializable]
     public class Ability_Info : DataObject
     {
-        [DataElement()]
+        [PrimaryKey()]
         public UInt16 Entry;
-
-        [DataElement()]
-        public byte Level;
 
         [DataElement()]
         public byte CareerLine;
 
-        [DataElement]
-        public UInt16 AbilityType;
+        [DataElement(Varchar = 255)]
+        public string Name;
 
         [DataElement()]
-        public int MinRange;
+        public byte MinimumRank;
 
         [DataElement()]
-        public int MaxRange;
+        public byte MinimumRenown;
 
-        [DataElement]
-        public int CastTime;
+        [DataElement()]
+        public byte MinRange;
 
-        [DataElement]
-        public int CoolDown;
+        [DataElement()]
+        public byte Range;
+
+        [DataElement()]
+        public ushort IconId;
+
+        [DataElement()]
+        public string Requirements;
+ 
+        [DataElement(Varchar = 255)]
+        public string Specline;
+
+        [DataElement()]
+        public ushort CastTime;
+
+        [DataElement()]
+        public ushort Cooldown;
+
+        [DataElement()]
+        public ushort ReuseTimer;
+
+        [DataElement()]
+        public ushort ReuseTimerMax;
+
+        [DataElement()]
+        public byte Category;
+
+        [DataElement()]
+        public ushort Flags;
+
+        [DataElement()]
+        public byte ApCost;
+
+        [DataElement()]
+        public byte ApSec;
+
+        [DataElement()]
+        public byte PointCost;
+
+        [DataElement()]
+        public uint CashCost;
+
+        [DataElement()]
+        public byte MinimumCategoryPoints;
+
+        [DataElement()]
+        public byte MaximumPurchaseCount;
+
+        [DataElement()]
+        public byte RequiredActionCounterCount;
+
+        [DataElement()]
+        public uint RequiredTomeEntryID;
+
+        /// <summary>
+        /// Custom Values
+        /// </summary>
+
+        [DataElement()]
+        public string HandlerName;
+
+        [DataElement(AllowDbNull = false)]
+        public UInt16 EffectID;
 
         [DataElement()]
         public byte TargetType;
 
         [DataElement()]
-        public int Damage;
+        public bool GroupMates = false;
 
-        [DataElement()]
-        public UInt16 ActionPoints;
+        public ushort MaxRange
+        {
+            get
+            {
+                return Range;
+            }
+        }
+
+        public List<Ability_Stats> Stats;
     }
 }

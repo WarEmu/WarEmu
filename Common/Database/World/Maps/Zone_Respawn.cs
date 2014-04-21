@@ -8,7 +8,7 @@ using FrameWork;
 namespace Common
 {
     // Valeur Fixe d'un character
-    [DataTable(PreCache = false, TableName = "Zone_Respawns", DatabaseName = "World")]
+    [DataTable(PreCache = false, TableName = "zone_respawns", DatabaseName = "World")]
     [Serializable]
     public class Zone_Respawn : DataObject
     {

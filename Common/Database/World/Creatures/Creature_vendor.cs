@@ -25,7 +25,7 @@ using FrameWork;
 namespace Common
 {
     // Valeur Fixe d'un character
-    [DataTable(PreCache = false, TableName = "Creature_vendors", DatabaseName = "World")]
+    [DataTable(PreCache = false, TableName = "creature_vendors", DatabaseName = "World")]
     [Serializable]
     public class Creature_vendor : DataObject
     {

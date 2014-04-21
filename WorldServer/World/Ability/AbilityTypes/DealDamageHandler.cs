@@ -67,7 +67,7 @@ namespace WorldServer
 
         public override uint GetAbilityDamage()
         {
-            uint Damage = (uint)Ab.Info.Damage;
+            uint Damage = 0;// (uint)Ab.Info.Damage;
 
             if(Ab.Info.MaxRange <= 5)
                 Damage += (uint)(Ab.Caster.GetUnit().StsInterface.GetTotalStat((byte)GameData.Stats.STATS_STRENGTH) / 5);

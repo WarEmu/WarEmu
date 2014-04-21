@@ -21,7 +21,7 @@ namespace WorldServer
         }
 
 
-        public void Load(Character_social[] Socials)
+        public void Load(List<Character_social> Socials)
         {
             if(Socials != null)
                 foreach (Character_social Social in Socials)

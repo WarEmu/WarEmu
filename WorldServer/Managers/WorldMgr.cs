@@ -87,67 +87,23 @@ namespace WorldServer
             IList<Zone_Area> Infos = Database.SelectAllObjects<Zone_Area>();
             foreach (Zone_Area Area in Infos)
             {
-                List<Zone_Area> Areas;
-                if(!_Zone_Area.TryGetValue(Area.ZoneId,out Areas))
-                {
-                    Areas = new List<Zone_Area>();
-                    _Zone_Area.Add(Area.ZoneId, Areas);
-                }
-
-                Areas.Add(Area);
-
-                //Area.PieceId = (byte)Areas.Count;
-                
-                if (Area.PieceId != 0)
-                {
-                    Area.Information = GetPieceInformation(Area.ZoneId, Area.PieceId);
-
-                    if(Area.Information != null)
-                        ++PieceInformation;
-                }
+                AddZoneArea(Area);
             }
 
             Log.Success("LoadZone_Info", "Loaded " + Infos.Count + " Zone_Area && " + PieceInformation + " Piece Informations");
         }
 
-        static public PieceInformation GetPieceInformation(UInt16 ZoneID,byte PieceId)
+        static public void AddZoneArea(Zone_Area Area)
         {
-            string PieceInfoFile = Program.Config.ZoneFolder + "zone" + String.Format("{0:000}", ZoneID) + "/mappieces.csv";
-
-            try
+            List<Zone_Area> Areas;
+            if (!_Zone_Area.TryGetValue(Area.ZoneId, out Areas))
             {
-                using (StreamReader Reader = new StreamReader(PieceInfoFile))
-                {
-                    int CurrentPieceId = 0;
-                    while (Reader.Peek() > 0)
-                    {
-                        string Line = Reader.ReadLine();
-
-                        if (CurrentPieceId == PieceId)
-                        {
-                            string[] Values = Line.Split(',');
-                            PieceInformation Info = new PieceInformation();
-                            Info.PieceId = byte.Parse(Values[0]);
-                            Info.OffsetX = ushort.Parse(Values[1]);
-                            Info.OffsetY = ushort.Parse(Values[2]);
-                            Info.Width = ushort.Parse(Values[3]);
-                            Info.Height = ushort.Parse(Values[4]);
-                            return Info;
-                        }
-
-                        ++CurrentPieceId;
-                    }
-                }
-            }
-            catch
-            {
-                Log.Error("WorldMgr", "Invalid Piece File Directory : " + PieceInfoFile);
-                return null;
+                Areas = new List<Zone_Area>();
+                _Zone_Area.Add(Area.ZoneId, Areas);
             }
 
-            return null;
+            Areas.Add(Area);
         }
-
         static public List<Zone_Area> GetZoneAreas(ushort ZoneID)
         {
             List<Zone_Area> Areas;

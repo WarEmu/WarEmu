@@ -60,7 +60,7 @@ namespace WorldServer
             foreach (Ability_Info Info in Abilities)
             {
                 Out.WriteUInt16(Info.Entry);
-                Out.WriteByte(Info.Level);
+                Out.WriteByte(0);//Info.Level);
             }
 
             GetPlayer().SendPacket(Out);
@@ -127,7 +127,7 @@ namespace WorldServer
 
                 if (CurrentAbility.Handler == null || Result == GameData.AbilityResult.ABILITYRESULT_OK)
                 {
-                    Obj.GetUnit().ActionPoints -= Info.ActionPoints;
+                    Obj.GetUnit().ActionPoints -= 0;// Info.ActionPoints;
                     if (Obj.IsPlayer())
                         Obj.GetPlayer().SendHealh();
                 }
@@ -140,8 +140,8 @@ namespace WorldServer
         {
             if (LastCast + GlobalMSCoolDown > TCPServer.GetTimeStampMS())
                 return GameData.AbilityResult.ABILITYRESULT_NOTREADY;
-            else if (Info.ActionPoints > GetPlayer().ActionPoints)
-                return GameData.AbilityResult.ABILITYRESULT_AP;
+            //else if (Info.ActionPoints > GetPlayer().ActionPoints)
+            //    return GameData.AbilityResult.ABILITYRESULT_AP;
 
             return GameData.AbilityResult.ABILITYRESULT_OK;
         }

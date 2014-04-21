@@ -85,7 +85,7 @@ namespace WorldServer
                                     return;
                                 }
 
-                                Character_items item = Mail.ItemsReqInfo.ElementAt(itemnum);
+                                Character_item item = Mail.ItemsReqInfo.ElementAt(itemnum);
                                 Plr.ItmInterface.CreateItem(item.Entry, item.Counts);
                                 Mail.ItemsReqInfo.Remove(item);
 
@@ -100,7 +100,7 @@ namespace WorldServer
                                     Mail.Money = 0;
                                 }
                                 // Take as many items as you can before inventory is full
-                                foreach (Character_items curritem in Mail.ItemsReqInfo.ToArray())
+                                foreach (Character_item curritem in Mail.ItemsReqInfo.ToArray())
                                 {
                                     UInt16 Slot = Plr.ItmInterface.GetFreeInventorySlot();
                                     if (Slot == 0)

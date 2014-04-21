@@ -59,7 +59,7 @@ namespace WorldServer
             lock (_Players)
                 return _Players.Find(plr => plr.Name.ToLower() == Name);
         }
-        static public Player GetPlayer(int CharacterId)
+        static public Player GetPlayer(UInt32 CharacterId)
         {
             lock (_Players)
                 return _Players.Find(plr => plr.CharacterId == CharacterId);
@@ -127,7 +127,7 @@ namespace WorldServer
         public TokInterface TokInterface;
         public MailInterface MlInterface;
 
-        public int CharacterId
+        public UInt32 CharacterId
         {
             get
             {
@@ -155,7 +155,7 @@ namespace WorldServer
 
             _Client = Client;
             _Info = Info;
-            _Value = Info.Value[0];
+            _Value = Info.Value;
 
             Name = Info.Name;
             Realm = (GameData.Realms)Info.Realm;
@@ -886,9 +886,6 @@ namespace WorldServer
             }
 
             bool Updated = base.SetPosition(PinX, PinY, PinZ, Head);
-
-            if (Updated)
-                Zone.AreaInfo.GetTokExplore(TokInterface, PinX, PinY, (byte)Realm);
 
             _Value.WorldX = WorldPosition.X;
             _Value.WorldY = WorldPosition.Y;

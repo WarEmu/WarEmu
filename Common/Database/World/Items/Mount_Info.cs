@@ -1,4 +1,6 @@
 ﻿/*
+ * Copyright (C) 2013 APS
+ *	http://AllPrivateServer.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,17 +26,20 @@ using FrameWork;
 
 namespace Common
 {
-    [DataTable(PreCache = false, TableName = "random_names", DatabaseName = "World")]
+    [DataTable(PreCache = false, TableName = "mount_infos", DatabaseName = "World")]
     [Serializable]
-    public class Random_name : DataObject
+    public class Mount_Info : DataObject
     {
-        private string _Name;
+        [DataElement()]
+        public uint Id;
 
-        [DataElement(Unique = true, Varchar = 255)]
-        public string Name
-        {
-            get { return _Name; }
-            set { _Name = value; }
-        }
+        [DataElement(Unique=true,AllowDbNull=false)]
+        public uint Entry;
+
+        [DataElement(AllowDbNull=false)]
+        public UInt16 Speed;
+
+        [DataElement(AllowDbNull = false, Varchar = 255)]
+        public string Name;
     }
 }

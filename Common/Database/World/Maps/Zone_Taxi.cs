@@ -7,7 +7,7 @@ using FrameWork;
 
 namespace Common
 {
-    [DataTable(PreCache = false, TableName = "Zone_Taxis", DatabaseName = "World")]
+    [DataTable(PreCache = false, TableName = "zone_taxis", DatabaseName = "World")]
     [Serializable]
     public class Zone_Taxi : DataObject
     {

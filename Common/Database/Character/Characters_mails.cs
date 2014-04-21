@@ -13,8 +13,8 @@ namespace Common
     public class Character_mail : DataObject
     {
         private int _Guid;
-        private int _CharacterId;
-        private int _CharacterIdSender;
+        private UInt32 _CharacterId;
+        private UInt32 _CharacterIdSender;
         private string _SenderName;
         private string _ReceiverName;
         private string _Title;
@@ -34,14 +34,14 @@ namespace Common
         }
 
         [DataElement(AllowDbNull = false)]
-        public int CharacterId
+        public UInt32 CharacterId
         {
             get { return _CharacterId; }
             set { _CharacterId = value; Dirty = true; }
         }
 
         [DataElement(AllowDbNull = false)]
-        public int CharacterIdSender
+        public UInt32 CharacterIdSender
         {
             get { return _CharacterIdSender; }
             set { _CharacterIdSender = value; Dirty = true; }
@@ -102,7 +102,7 @@ namespace Common
             get
             {
                 string Value = "";
-                foreach (Character_items Obj in ItemsReqInfo)
+                foreach (Character_item Obj in ItemsReqInfo)
                     Value += Obj.Guid + ";";
                 return Value;
             }
@@ -126,6 +126,6 @@ namespace Common
         }
 
         public List<uint> ItemsReq = new List<uint>();
-        public List<Character_items> ItemsReqInfo = new List<Character_items>();
+        public List<Character_item> ItemsReqInfo = new List<Character_item>();
     }
 }

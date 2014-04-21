@@ -69,7 +69,7 @@ namespace WorldServer
                     else
                     {
 
-                        Character_items Citm = null;
+                        Character_item Citm = null;
                         CharacterInfo_item[] Items = CharMgr.GetCharacterInfoItem(Char.CareerLine);
 
                         for (int i = 0; i < Items.Length; ++i)
@@ -77,7 +77,7 @@ namespace WorldServer
                             if (Items[i] == null)
                                 continue;
 
-                            Citm = new Character_items();
+                            Citm = new Character_item();
                             Citm.Counts = Items[i].Count;
                             Citm.CharacterId = Char.CharacterId;
                             Citm.Entry = Items[i].Entry;
@@ -107,7 +107,7 @@ namespace WorldServer
 
                         CharMgr.Database.AddObject(CInfo);
 
-                        Char.Value = new Character_value[1] { CInfo };
+                        Char.Value = CInfo;
 
                         PacketOut Out = new PacketOut((byte)Opcodes.F_SEND_CHARACTER_RESPONSE);
                         Out.WritePascalString(cclient._Account.Username);
@@ -243,22 +243,24 @@ namespace WorldServer
                 Out.WriteByte((byte)CharMgr.GetAccountRealm(cclient._Account.AccountId));
                 cclient.SendPacket(Out);
             }
-           
-            else{
-               
-                 PacketOut Out = new PacketOut((byte)Opcodes.F_REQUEST_CHAR_RESPONSE);
+            else
+            {
+                PacketOut Out = new PacketOut((byte)Opcodes.F_REQUEST_CHAR_RESPONSE);
+                Out.FillString(cclient._Account.Username, 21);
+                Out.WriteByte(0);
+                Out.WriteByte(0);
+                Out.WriteByte(0);
+                Out.WriteByte(4);
 
+                //if(cclient._Account.GmLevel == 0 && Realm is open rvr)
+                //    Out.WriteByte((byte)CharMgr.GetAccountRealm(cclient._Account.AccountId));
+                //else
+                    Out.WriteByte(0);
 
-                 Out.FillString(cclient._Account.Username, 25); // account name
-                 Out.WriteByte(0xFF);
-                 Out.WriteByte(CharMgr.MAX_SLOT); // Max characters 20
-                 Out.WriteUInt16(0); // unk
-                 Out.WriteByte(0); // name changing tokens, 1 will enable button
-                 Out.WriteUInt16(0); //unk
-
-                 byte[] Chars = CharMgr.BuildCharactersList(cclient._Account.AccountId);
-                 Out.Write(Chars, 0, Chars.Length);
-                 cclient.SendPacket(Out);
+                byte[] Chars = CharMgr.BuildCharacters(cclient._Account.AccountId);
+                Out.Write(Chars, 0, Chars.Length);
+                Out.WritePacketLength();
+                cclient.SendPacket(Out);
             }
         }
 

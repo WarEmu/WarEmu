@@ -25,11 +25,11 @@ using FrameWork;
 namespace Common
 {
     // Valeur Fixe d'un character
-    [DataTable(PreCache = false, TableName = "Characters", DatabaseName = "Characters")]
+    [DataTable(PreCache = false, TableName = "characters", DatabaseName = "Characters")]
     [Serializable]
     public class Character : DataObject
     {
-        private int _CharacterId;
+        private UInt32 _CharacterId;
         private string _Name;
         private int _RealmId;
         private int _AccountId;
@@ -42,6 +42,7 @@ namespace Common
         private byte _Race;
         private byte[] _Traits;
         private byte _Sex;
+        public bool FirstConnect;
 
         public Character()
             : base()
@@ -50,7 +51,7 @@ namespace Common
         }
 
         [DataElement(AllowDbNull=false)]
-        public int CharacterId
+        public UInt32 CharacterId
         {
             get { return _CharacterId; }
             set { _CharacterId = value; Dirty = true; }
@@ -149,20 +150,15 @@ namespace Common
             set { _Traits = value; }
         }
 
-        [Relation( LocalField = "CharacterId", RemoteField = "CharacterId",AutoLoad = true,AutoDelete=true)]
-        public Character_value[] Value;
+        public Character_value Value;
 
-        [Relation(LocalField = "CharacterId", RemoteField = "CharacterId", AutoLoad = true, AutoDelete = true)]
-        public Character_social[] Socials;
+        public List<Character_social> Socials;
 
-        [Relation(LocalField = "CharacterId", RemoteField = "CharacterId", AutoLoad = true, AutoDelete = true)]
-        public Character_tok[] Toks;
+        public List<Character_tok> Toks;
 
-        [Relation(LocalField = "CharacterId", RemoteField = "CharacterId", AutoLoad = true, AutoDelete = true)]
-        public Character_quest[] Quests;
+        public List<Character_quest> Quests;
 
-        [Relation(LocalField = "CharacterId", RemoteField = "CharacterId", AutoLoad = true, AutoDelete = true)]
-        public Characters_influence[] Influences;
+        public List<Characters_influence> Influences;
 
         [Relation(LocalField = "CharacterId", RemoteField = "CharacterId", AutoLoad = true, AutoDelete = true)]
         public Character_quest_inprogress[] InProgressQuests;

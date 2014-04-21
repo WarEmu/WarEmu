@@ -210,7 +210,7 @@ namespace FrameWork
         }
 
         public static void Dump(string name, MemoryStream Packet, bool Force = false)
-         {
+        {
             if (Force || _config.Info.Dump)
             {
                 byte[] Buff = Packet.ToArray();
