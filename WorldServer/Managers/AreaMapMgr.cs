@@ -1,4 +1,22 @@
-﻿
+﻿/*
+ * Copyright (C) 2013 APS
+ *	http://AllPrivateServer.com
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +29,7 @@ using FrameWork;
 
 namespace WorldServer
 {
-    public class AreaMapInfo
+    /*public class AreaMapInfo
     {
         public UInt16 ZoneID;
         public List<Zone_Area> Areas;
@@ -37,7 +55,6 @@ namespace WorldServer
         public uint GetTokExplore(TokInterface Interface,ushort PinX, ushort PinY, byte Realm)
         {
             Zone_Area Area = GetArea(PinX, PinY, Realm);
-            Log.Info("GetTokExplore", "Area = " + Area);
 
             if (Area == null)
                 return 0;
@@ -95,7 +112,7 @@ namespace WorldServer
 
             if (PinX >= Area.Information.Width || PinY >= Area.Information.Height || PinX < 0 || PinY < 0)
             {
-                Log.Error("IsOnExplore", "PinX=" + PinX + ",PinY=" + PinY+",ZoneId="+Area.ZoneId+",Piece="+Area.PieceId);
+                //Log.Error("IsOnExplore", "PinX=" + PinX + ",PinY=" + PinY+",ZoneId="+Area.ZoneId+",Piece="+Area.PieceId);
                 return false;
             }
 
@@ -140,5 +157,5 @@ namespace WorldServer
 
             return Info;
         }
-    }
+    }*/
 }
