@@ -173,12 +173,13 @@ namespace WorldServer
                 return;
 
             foreach (Player Plr in _PlayerRanged.ToArray())
-                if (Plr.Realm == GameData.Realms.REALMS_REALM_ORDER && GetPlayer().Realm == GameData.Realms.REALMS_REALM_ORDER)
+            {
+                if (Plr.GmLevel != 0 || GetPlayer().GmLevel != 0 || Program.Config.ChatBetweenRealms || Plr.Realm == GetPlayer().Realm)
                     Plr.SendMessage(this, Msg, Filter);
-                else if (Plr.Realm == GameData.Realms.REALMS_REALM_DESTRUCTION && GetPlayer().Realm == GameData.Realms.REALMS_REALM_DESTRUCTION)
-                    Plr.SendMessage(this, Msg, Filter);
+            }
 
-            GetPlayer().SendMessage(this, Msg, Filter);
+            if (IsPlayer())
+                GetPlayer().SendMessage(this, Msg, Filter);
         }
 
         #endregion
