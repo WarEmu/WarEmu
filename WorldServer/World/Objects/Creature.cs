@@ -34,28 +34,37 @@ namespace WorldServer
             Name = Spawn.Proto.Name;
         }
 
-        public override void Update()
+        public override void Update(long Tick)
         {
-            base.Update();
+            base.Update(Tick);
         }
 
         static public ushort GenerateWounds(byte Level, byte Rank)
         {
             float Wounds = 0;
-            Wounds += 92 * (Level + 1);
-            Wounds += Level * 2.5f;
+            Wounds += 95 * (Level + 1);
+            Wounds += Level * 5.5f;
             if (Rank > 0)
-                Wounds += Rank * (5.85f * Level * 92);
+                Wounds += Rank * (5.85f * Level * 52);
             return (ushort)(Wounds/10);
         }
         public override void OnLoad()
         {
-            InteractType = GenerateInteractType(Spawn.Title);
+            InteractType = GenerateInteractType(Spawn.Title != 0 ? Spawn.Title : Spawn.Proto.Title);
 
             SetFaction(Spawn.Faction != 0 ? Spawn.Faction : Spawn.Proto.Faction);
 
             ItmInterface.Load(WorldMgr.GetCreatureItems(Spawn.Entry));
-            Level = (byte)RandomMgr.Next((int)Spawn.Proto.MinLevel, (int)Spawn.Proto.MaxLevel);
+            if (Spawn.Proto.MinLevel > Spawn.Proto.MaxLevel)
+                Spawn.Proto.MinLevel = Spawn.Proto.MaxLevel;
+
+            if (Spawn.Proto.MaxLevel <= Spawn.Proto.MinLevel)
+                Spawn.Proto.MaxLevel = Spawn.Proto.MinLevel;
+
+            if (Spawn.Proto.MaxLevel == 0) Spawn.Proto.MaxLevel = 1;
+            if (Spawn.Proto.MinLevel == 0) Spawn.Proto.MinLevel = 1;
+
+            Level = (byte)RandomMgr.Next((int)Spawn.Proto.MinLevel, (int)Spawn.Proto.MaxLevel+1);
             StsInterface.SetBaseStat((byte)GameData.Stats.STATS_WOUNDS, GenerateWounds(Level,Rank));
             StsInterface.ApplyStats();
             Health = TotalHealth;
@@ -63,7 +72,12 @@ namespace WorldServer
             X = Zone.CalculPin((uint)(Spawn.WorldX), true);
             Y = Zone.CalculPin((uint)(Spawn.WorldY), false);
             Z = (ushort)(Spawn.WorldZ);
-
+            if (Zone.ZoneId == 161)
+            {
+                Z += 16384;
+                X += 16384;
+                Y += 16384;
+            }
 
             // TODO : Bad Height Formula
             /*int HeightMap = HeightMapMgr.GetHeight(Zone.ZoneId, X, Y);
@@ -79,18 +93,33 @@ namespace WorldServer
             WorldPosition.Z = Spawn.WorldZ;
 
             SetOffset((ushort)(Spawn.WorldX >> 12), (ushort)(Spawn.WorldY >> 12));
-            Region.UpdateRange(this);
-                
+            ScrInterface.AddScript(Spawn.Proto.ScriptName);
             base.OnLoad();
+
+            if (Spawn.Title == 0 && Spawn.Icone == 0 && Spawn.Proto.Title == 0 && Spawn.Icone == 0 && Spawn.Emote == 0 && Spawn.Proto.FinishingQuests == null && Spawn.Proto.StartingQuests == null)
+            {
+                if (Faction <= 1 || Faction == 128 || Faction == 129)
+                {
+                    SFastRandom Random = new SFastRandom(X ^ Y ^ Z);
+
+                    for (int i = 0; i < 3; ++i)
+                    {
+                        Waypoint Wp = new Waypoint();
+                        Wp.X = (ushort)(X + Random.randomInt(50) + Random.randomInt(100) + Random.randomInt(150));
+                        Wp.Y = (ushort)(Y + Random.randomInt(50) + Random.randomInt(100) + Random.randomInt(150));
+                        Wp.Z = (ushort)Z;
+                        Wp.Speed = 10;
+                        Wp.WaitAtEndMS = (uint)(5000 + Random.randomIntAbs(10) * 1000);
+                        AiInterface.AddWaypoint(Wp);
+                    }
+                }
+            }
+
+            IsActive = true;
         }
         public override void SendMeTo(Player Plr)
         {
-            List<byte> TmpState = new List<byte>();
-
-            if (QtsInterface.CreatureHasStartQuest(Plr))
-                TmpState.Add(5);
-            else if (QtsInterface.CreatureHasQuestToComplete(Plr))
-                TmpState.Add(7);
+            //Log.Success("Creature", "SendMe " + Name);
 
             PacketOut Out = new PacketOut((byte)Opcodes.F_CREATE_MONSTER);
             Out.WriteUInt16(Oid);
@@ -104,7 +133,7 @@ namespace WorldServer
             // 18
             Out.WriteUInt16(Spawn.Proto.Model1);
             Out.WriteByte((byte)Spawn.Proto.MinScale);
-            Out.WriteByte(Spawn.Proto.MinLevel);
+            Out.WriteByte(Level);
             Out.WriteByte(Faction);
 
             Out.Fill(0, 4);
@@ -119,43 +148,43 @@ namespace WorldServer
             Out.WriteUInt16(Spawn.Proto._Unks[6]);
             Out.WriteUInt16(Spawn.Title);
 
-            Out.WriteByte((byte)(Spawn.bBytes.Length + States.Count + TmpState.Count));
+            long TempPos = Out.Position;
+            byte TempLen = (byte)(Spawn.bBytes.Length + States.Count);
+            Out.WriteByte(TempLen);
             Out.Write(Spawn.bBytes, 0, Spawn.bBytes.Length);
             Out.Write(States.ToArray(), 0, States.Count);
-            Out.Write(TmpState.ToArray(), 0, TmpState.Count);
+            if (QtsInterface.CreatureHasStartQuest(Plr))
+            {
+                Out.WriteByte(5);
+                Out.Position = TempPos;
+                Out.WriteByte((byte)(TempLen + 1));
+            }
+            else if (QtsInterface.CreatureHasQuestToAchieve(Plr))
+            {
+                Out.WriteByte(4);
+                Out.Position = TempPos;
+                Out.WriteByte((byte)(TempLen + 1));
+            }
+            else if (QtsInterface.CreatureHasQuestToComplete(Plr))
+            {
+                Out.WriteByte(7);
+                Out.Position = TempPos;
+                Out.WriteByte((byte)(TempLen + 1));
+            }
+
+            Out.Position = Out.Length;
 
             Out.WriteByte(0);
 
             Out.WriteStringBytes(Name);
 
-            Out.WriteByte(0); // ?
-            Out.WriteByte(1); // ?
-            Out.WriteByte(10); // ?
-
-            Out.WriteByte(0); // ?
-
-            Out.WriteUInt16(0); // ?
-            Out.WriteByte(Spawn.Icone);
-            Out.WriteByte((byte)Spawn.Proto._Unks[0]);
-
-            Out.WriteByte(0);
-
-            Out.Fill(0, 8); // Flags;
-
-            Out.WriteByte(100); // Health %
-
-            Out.WriteUInt16(Zone.ZoneId);
-
             Out.Fill(0, 48);
-
             Plr.SendPacket(Out);
 
             base.SendMeTo(Plr);
         }
         public override void SendInteract(Player Plr, InteractMenu Menu)
         {
-            Log.Success("SendInteract", "" + Name + " -> " + Plr.Name + ",Type="+InteractType);
-
             Plr.QtsInterface.HandleEvent(Objective_Type.QUEST_SPEACK_TO, Spawn.Entry, 1);
 
             if (!IsDead)
@@ -200,7 +229,6 @@ namespace WorldServer
 		                    };
 
                             UInt16 Counts = 1;
-                            Zone_Info Info;
 
                             PacketOut Out = new PacketOut((byte)Opcodes.F_INTERACT_RESPONSE);
                             Out.WriteUInt16(0x0A12);
@@ -217,8 +245,57 @@ namespace WorldServer
                             Plr.SendPacket(Out);
                         }break;
 
+                    case GameData.InteractType.INTERACTTYPE_TRAINER:
+                        {
+                            if (Menu.Menu == 7)
+                            {
+                                PacketOut Out = new PacketOut((byte)Opcodes.F_INTERACT_RESPONSE);
+                                Out.WriteByte(5);
+                                Out.WriteByte(0x0F);
+                                Out.WriteByte(6);
+                                Out.WriteUInt16(0);
+                                Plr.SendPacket(Out);
+                            }
+                            else
+                            {
+                                PacketOut Out = new PacketOut((byte)Opcodes.F_INTERACT_RESPONSE);
+                                Out.WriteByte(0);
+                                Out.WriteUInt16(Oid);
+
+                                if (Plr.Realm == GameData.Realms.REALMS_REALM_ORDER)
+                                {
+                                    Out.WritePacketString(@"|00 00 00 21 00 94 48 61 69 6C |.........!..Hail|
+|20 64 65 66 65 6E 64 65 72 20 6F 66 20 74 68 65 | defender of the|
+|20 45 6D 70 69 72 65 21 20 20 59 6F 75 72 20 70 | Empire!  Your p|
+|65 72 66 6F 72 6D 61 6E 63 65 20 69 6E 20 62 61 |erformance in ba|
+|74 74 6C 65 20 69 73 20 74 68 65 20 6F 6E 6C 79 |ttle is the only|
+|20 74 68 69 6E 67 20 74 68 61 74 20 6B 65 65 70 | thing that keep|
+|73 20 74 68 65 20 68 6F 72 64 65 73 20 6F 66 20 |s the hordes of |
+|43 68 61 6F 73 20 61 74 20 62 61 79 2E 20 4C 65 |Chaos at bay. Le|
+|74 27 73 20 62 65 67 69 6E 20 79 6F 75 72 20 74 |t's begin your t|
+|72 61 69 6E 69 6E 67 20 61 74 20 6F 6E 63 65 21 |raining at once!|
+|00                                              |.               |");
+                                }
+                                else
+                                {
+                                    Out.WritePacketString(@"|00 00 00 21 00 AA 4C 65 61 72 |.........!..Lear|
+|6E 20 74 68 65 73 65 20 6C 65 73 73 6F 6E 73 20 |n these lessons |
+|77 65 6C 6C 2C 20 66 6F 72 20 67 61 69 6E 69 6E |well, for gainin|
+|67 20 74 68 65 20 66 61 76 6F 72 20 6F 66 20 74 |g the favor of t|
+|68 65 20 52 61 76 65 6E 20 67 6F 64 20 73 68 6F |he Raven god sho|
+|75 6C 64 20 62 65 20 6F 66 20 75 74 6D 6F 73 74 |uld be of utmost|
+|20 69 6D 70 6F 72 74 61 6E 63 65 20 74 6F 20 79 | importance to y|
+|6F 75 2E 20 4F 74 68 65 72 77 69 73 65 2E 2E 2E |ou. Otherwise...|
+|20 54 68 65 72 65 20 69 73 20 61 6C 77 61 79 73 | There is always|
+|20 72 6F 6F 6D 20 66 6F 72 20 6D 6F 72 65 20 53 | room for more S|
+|70 61 77 6E 20 77 69 74 68 69 6E 20 6F 75 72 20 |pawn within our |
+|72 61 6E 6B 73 2E 00                            |.......         |");
+                                }
+                                Plr.SendPacket(Out);
+                            }
+                        } break;
                     default:
-                        QtsInterface.HandleInteract(Plr, Menu);
+                        QtsInterface.HandleInteract(Plr, this, Menu);
                         break;
                 };
             }
@@ -226,11 +303,28 @@ namespace WorldServer
             base.SendInteract(Plr, Menu);
         }
 
+ 
+        /* // Group LOOT : Pass , accept, cancel
+         * Out.WritePacketString(@"|07 19 0A 00 00 00 00 03 2E 56 22 B9 00 |............V..|
+|00 00 00 00 00 00 00 00 24 00 00 00 00 00 01 00 |........$.......|
+|00 00 00 00 00 00 00 00 00 00 00 00 00 09 C4 00 |................|
+|01 00 00 00 00 00 00 00 00 00 00 00 00 09 57 61 |..............Wa|
+|72 20 43 72 65 73 74 00 00 00 00 00 00 71 50 72 |r Crest......qPr|
+|6F 6F 66 20 6F 66 20 79 6F 75 72 20 76 61 6C 6F |oof of your valo|
+|72 20 6F 6E 20 74 68 65 20 66 69 65 6C 64 20 6F |r on the field o|
+|66 20 62 61 74 74 6C 65 2E 20 54 68 65 73 65 20 |f battle. These |
+|6D 61 79 20 62 65 20 75 73 65 64 20 74 6F 20 74 |may be used to t|
+|72 61 64 65 20 66 6F 72 20 65 71 75 69 70 6D 65 |rade for equipme|
+|6E 74 20 66 72 6F 6D 20 76 61 72 69 6F 75 73 20 |nt from various |
+|51 75 61 72 74 65 72 6D 61 73 74 65 72 73 2E 01 |Quartermasters..|
+|00 00 00 03 06 00 08 00 00 00 00 00 00 00 00 00 |................|
+|00 00 00 00 00 00 00 00 00 00                   |..........      |");*/
+
         public override void SetDeath(Unit Killer)
         {
             Killer.QtsInterface.HandleEvent(Objective_Type.QUEST_KILL_MOB, Spawn.Entry,1);
             base.SetDeath(Killer);
-            EvtInterface.AddEvent(RezUnit, 60000, 1); // 60 seconde Rez
+            EvtInterface.AddEvent(RezUnit, 30000 + Level * 1000, 1); // 30 seconde Rez
         }
 
         public override void RezUnit()
@@ -241,7 +335,7 @@ namespace WorldServer
 
         public override string ToString()
         {
-            return "SpawnId="+Spawn.Entry+",Entry="+Spawn.Entry+",Name="+Name+",Level="+Level+",Faction="+Faction+",Emote="+Spawn.Emote+",Position :" +base.ToString();
+            return "SpawnId=" + Spawn.Entry + ",Entry=" + Spawn.Entry + ",Name=" + Name + ",Level=" + Level + ",Faction=" + Faction + ",Emote=" + Spawn.Emote + "AI:" + AiInterface.State + ",Position :" + base.ToString();
         }
     }
 }

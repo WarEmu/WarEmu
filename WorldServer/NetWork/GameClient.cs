@@ -88,10 +88,7 @@ namespace WorldServer
                         PacketLength -= 2;
 
                         if (PacketLength < PacketSize + 10)
-                        {
-                            Log.Error("OnReceive", "Packet Header Incomplet " + PacketLength + "<" + PacketSize);
                             break;
-                        }
 
                         packet.Size = (ulong)PacketSize+10;
                         packet = DeCrypt(packet);

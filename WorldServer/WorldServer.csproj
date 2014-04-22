@@ -44,6 +44,7 @@
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -75,12 +76,14 @@
     <Compile Include="Configs\WorldConfigs.cs" />
     <Compile Include="Managers\AreaMapMgr.cs" />
     <Compile Include="Managers\CharMgr.cs" />
+    <Compile Include="Managers\ClientFileMgr.cs" />
     <Compile Include="Managers\CommandMgr.cs" />
     <Compile Include="Managers\GmCommand.cs" />
-    <Compile Include="Managers\HeightMapMgr.cs" />
     <Compile Include="Managers\LootsMgr.cs" />
+    <Compile Include="Managers\ScriptsManager.cs" />
     <Compile Include="NetWork\Handler\AuthentificationHandlers.cs" />
     <Compile Include="NetWork\Handler\CharacterHandlers.cs" />
+    <Compile Include="NetWork\Handler\ClientDatas.cs" />
     <Compile Include="NetWork\Handler\CombatHandlers.cs" />
     <Compile Include="NetWork\Handler\GroupHandlers.cs" />
     <Compile Include="NetWork\Handler\InterfaceHandlers.cs" />
@@ -91,20 +94,37 @@
     <Compile Include="NetWork\Handler\SocialHandlers.cs" />
     <Compile Include="NetWork\Handler\TchatHandlers.cs" />
     <Compile Include="NetWork\Handler\F_UNK1.cs" />
-    <Compile Include="World\Ability\Ability.cs" />
-    <Compile Include="World\Ability\AbilityMgr.cs" />
-    <Compile Include="World\Ability\AbilityTypes\DealDamageHandler.cs" />
-    <Compile Include="World\Ability\IAbilityTypeHandler.cs" />
+    <Compile Include="World\Abilities\Ability.cs" />
+    <Compile Include="World\Abilities\AbilityInterface.cs" />
+    <Compile Include="World\Abilities\AbilityMgr.cs" />
+    <Compile Include="World\Abilities\Handlers\Bonus\AbsorbDamagesHandler.cs" />
+    <Compile Include="World\Abilities\Handlers\Bonus\AbsorbDamagesOverTimeBuff.cs" />
+    <Compile Include="World\Abilities\Handlers\Bonus\StealsActionPointsBuff.cs" />
+    <Compile Include="World\Abilities\Handlers\Bonus\StealsActionPointsHandler.cs" />
+    <Compile Include="World\Abilities\Handlers\DamageOverTimeHandler.cs" />
+    <Compile Include="World\Abilities\Handlers\DealDamagesHandler.cs" />
+    <Compile Include="World\Abilities\Handlers\Entries\FleeAbilityBuff.cs" />
+    <Compile Include="World\Abilities\Handlers\Entries\FleeAbilityHandler.cs" />
+    <Compile Include="World\Abilities\Handlers\Entries\HealPercentFromDamagesHandler.cs" />
+    <Compile Include="World\Abilities\Handlers\HealOverTimeHandler.cs" />
+    <Compile Include="World\Abilities\Handlers\ResurrectsTargetHandler.cs" />
+    <Compile Include="World\Abilities\Handlers\SimpleHealHandler.cs" />
+    <Compile Include="World\Abilities\Handlers\Zone\DealDamagesInFront.cs" />
+    <Compile Include="World\Abilities\Handlers\Zone\DealDamagesWhenHitHandler.cs" />
+    <Compile Include="World\Abilities\Handlers\Zone\DealDamagesZoneHandler.cs" />
+    <Compile Include="World\Abilities\Handlers\Zone\SimpleHealGroupHandler.cs" />
+    <Compile Include="World\Abilities\IAbilityTypeHandler.cs" />
     <Compile Include="World\AI\ABrain.cs" />
     <Compile Include="World\AI\AgressiveBrain.cs" />
     <Compile Include="World\AI\GuardBrain.cs" />
     <Compile Include="World\AI\PassiveBrain.cs" />
-    <Compile Include="World\Interfaces\AbilityInterface.cs" />
     <Compile Include="World\Interfaces\AIInterface.cs" />
     <Compile Include="World\Interfaces\BaseInterface.cs" />
     <Compile Include="World\Interfaces\CombatInterface.cs" />
     <Compile Include="World\Interfaces\EventInterface.cs" />
     <Compile Include="World\Interfaces\MailInterface.cs" />
+    <Compile Include="World\Interfaces\ScriptsInterface.cs" />
+    <Compile Include="World\Mounts\Mount.cs" />
     <Compile Include="World\Objects\Group.cs" />
     <Compile Include="World\Objects\Item.cs" />
     <Compile Include="World\Interfaces\ItemsInterface.cs" />
@@ -135,6 +155,11 @@
     <Compile Include="World\Positions\IPoint3D.cs" />
     <Compile Include="World\Positions\Point2D.cs" />
     <Compile Include="World\Positions\Point3D.cs" />
+    <Compile Include="World\Scripting\AGeneralScript.cs" />
+    <Compile Include="World\Scripting\Creatures\WorldMountsScript.cs" />
+    <Compile Include="World\Scripting\GameObject\MailBoxScript.cs" />
+    <Compile Include="World\Scripting\GeneralScriptAttributes.cs" />
+    <Compile Include="World\Scripting\PacketSenderScript.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
@@ -166,6 +191,7 @@
       <Name>FrameWork</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

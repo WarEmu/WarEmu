@@ -99,7 +99,7 @@ namespace WorldServer
             new CommandHandler("/follow", null, null ),
             new CommandHandler("/helmtoggle", null, null ),
             new CommandHandler("/helm", null, null ),
-            new CommandHandler("/help", null, null ),
+            new CommandHandler("/help", PlayerAd, null ),
             new CommandHandler("/hide", null, null ),
             new CommandHandler("/ignoreadd", null, null ),
             new CommandHandler("/ignorelist", null, null ),
@@ -130,23 +130,23 @@ namespace WorldServer
             new CommandHandler("/partynote", null, null ),
             new CommandHandler("/openpartynote", null, null ),
             new CommandHandler("/lfpnote", null, null ),
-            new CommandHandler("/partysay", null, null ),
-            new CommandHandler("/p", PlayerParty, null),
+            new CommandHandler("/partysay", PartySay, null ),
+            new CommandHandler("/p", PartySay, null),
             new CommandHandler("/partyjoin", null, null ),
-            new CommandHandler("/partyinvite", null, null ),
-            new CommandHandler("/invite", GroupInvite , null),
+            new CommandHandler("/partyinvite", PartyInvite, null ),
+            new CommandHandler("/invite", Invite , null),
             new CommandHandler("/partyinviteopen", null, null ),
             new CommandHandler("/oinvite", null, null ),
-            new CommandHandler("/partyremove", null, null ),
-            new CommandHandler("/partykick", null, null ),
+            new CommandHandler("/partyremove", PartyRemove, null ),
+            new CommandHandler("/partykick", PartyKick, null ),
             new CommandHandler("/partyboot", null, null ),
             new CommandHandler("/kick", null, null ),
             new CommandHandler("/partyleader", null, null ),
             new CommandHandler("/makeleader", null, null ),
             new CommandHandler("/mainassist", null, null ),
             new CommandHandler("/makemainassist", null, null ),
-            new CommandHandler("/partyleave", null, null ),
-            new CommandHandler("/partyquit", null, null ),
+            new CommandHandler("/partyleave", PartyLeave, null ),
+            new CommandHandler("/partyquit", PartyQuit, null ),
             new CommandHandler("/leave", null, null),
             new CommandHandler("/disband", null, null ),
             new CommandHandler("/partylfwarband", null, null ),
@@ -183,17 +183,17 @@ namespace WorldServer
             new CommandHandler("/scenariosay", null, null ),
             new CommandHandler("/sc", null, null ),
             new CommandHandler("/scenariotell", null, null ),
-            new CommandHandler("/sp", null, null ),
-            new CommandHandler("/sp1", null, null ),
-            new CommandHandler("/sp2", null, null ),
-            new CommandHandler("/sp3", null, null ),
-            new CommandHandler("/sp4", null, null ),
-            new CommandHandler("/sp5", null, null ),
-            new CommandHandler("/sp6", null, null ),
-            new CommandHandler("/sp7", null, null ),
-            new CommandHandler("/sp8", null, null ),
-            new CommandHandler("/sp9", null, null ),
-            new CommandHandler("/sp10", null, null ),
+            new CommandHandler("/sp", PlayerAd, null ),
+            new CommandHandler("/sp1", PlayerAd, null ),
+            new CommandHandler("/sp2", PlayerAd, null ),
+            new CommandHandler("/sp3", PlayerAd, null ),
+            new CommandHandler("/sp4", PlayerAd, null ),
+            new CommandHandler("/sp5", PlayerAd, null ),
+            new CommandHandler("/sp6", PlayerAd, null ),
+            new CommandHandler("/sp7", PlayerAd, null ),
+            new CommandHandler("/sp8", PlayerAd, null ),
+            new CommandHandler("/sp9", PlayerAd, null ),
+            new CommandHandler("/sp10", PlayerAd, null ),
             new CommandHandler("/script", null, null ),
             new CommandHandler("/shout", PlayerShout, null),
             new CommandHandler("/social", null, SocialHandler ),
@@ -213,6 +213,8 @@ namespace WorldServer
             new CommandHandler("/wbc", null, null ),
             new CommandHandler("/ra", null, null ),
             new CommandHandler("/who", null, null ),
+            new CommandHandler("/advs", PlayerChan, null ),
+            new CommandHandler("/schan", PlayerChan, null ),
             new CommandHandler("/", null, null)
         };
 
@@ -231,9 +233,10 @@ namespace WorldServer
             Text = Text.Remove(0,1);
             Text = Text.Insert(0,"/");
 
-            GetCommand(Plr, Text, Handlers);
+            if(WorldMgr.GeneralScripts.OnPlayerCommand(Plr, Text))
+                GetCommand(Plr, Text, Handlers);
         }
-        static public void GetCommand(Player Plr,string Text,CommandHandler[] Handlers)
+        static public void GetCommand(Player Plr, string Text, CommandHandler[] Handlers)
         {
             string Command = "";
             int Pos = Text.IndexOf(' ');
@@ -269,7 +272,6 @@ namespace WorldServer
                     }
                 }
             }
-
         }
 
         #endregion
@@ -280,16 +282,16 @@ namespace WorldServer
         static public void PlayerExit(Player Plr, string Text) { Plr.DisconnectTime = 0; Plr.Quit(); }
         static public void PlayerStuck(Player Plr, string Text)
         {
-            if (Plr.CbtInterface.IsFighting())
-                return;
-
-            CharacterInfo characterInfo = CharMgr.GetCharacterInfo(Plr._Info.Career);
-            Plr.Teleport(characterInfo.ZoneId, (uint)characterInfo.WorldX, (uint)characterInfo.WorldY, (ushort)characterInfo.WorldZ, (ushort)characterInfo.WorldO);
+            if (!Plr.CbtInterface.IsFighting())
+            {
+                CharacterInfo Info = CharMgr.GetCharacterInfo(Plr._Info.Career);
+                Plr.Teleport((ushort)Info.ZoneId, (uint)Info.WorldX, (uint)Info.WorldY, (ushort)Info.WorldZ, (ushort)Info.WorldO);
+            }
         }
 
         #region Tchat
 
-        static public void PlayerSay(Player Plr, string Text) { Plr.Say(Text, SystemData.ChatLogFilters.CHATLOGFILTERS_SAY); }
+        static public void PlayerSay(Player Plr, string Text) { if (!Plr.IsDead) Plr.Say(Text, SystemData.ChatLogFilters.CHATLOGFILTERS_SAY); }
         static public void PlayerWisp(Player Plr, string Text)
         {
             int Pos = Text.IndexOf(' ');
@@ -308,13 +310,27 @@ namespace WorldServer
                 Plr.SendMessage(Plr.Oid, ReceiverName, Text, SystemData.ChatLogFilters.CHATLOGFILTERS_TELL_SEND);
             }
         }
-        static public void PlayerShout(Player Plr, string Text) { Plr.Say(Text, SystemData.ChatLogFilters.CHATLOGFILTERS_SHOUT); }
-        static public void PlayerParty(Player Plr, string Text)
+        static public void PlayerShout(Player Plr, string Text) { if (!Plr.IsDead) Plr.Say(Text, SystemData.ChatLogFilters.CHATLOGFILTERS_SHOUT); }
+        static public void PlayerAd(Player Plr, string Text)
         {
-            if (Plr.GetGroup() == null)
-                return;
+            lock (Player._Players)
+            {
+                foreach (Player SubPlr in Player._Players)
+                    if(SubPlr.Realm == Plr.Realm)
+                        SubPlr.SendHelpMessage(Plr, Text);
+            }
+        }
+        static public void PlayerChan(Player Plr, string Text)
+        {
+            int Index = Text.IndexOf(" ");
+            if (Index > 0)
+            {
+                string ChanName = Text.Substring(0, Index);
+                Text = Text.Remove(0, Index + 1);
 
-            Plr.GetGroup().SendMessageToGroup(Plr, Text);
+                PlayerAd(Plr, Text);
+
+            }
         }
 
         #endregion
@@ -335,7 +351,12 @@ namespace WorldServer
 
         #region Group
 
-        static public void GroupInvite(Player Plr, string Name)
+        static public void Invite(Player Plr, string Text)
+        {
+            PartyInvite(Plr, Text);
+        }
+
+        static public void PartyInvite(Player Plr, string Name)
         {
             if (Plr.GetGroup() != null && Plr.GetGroup().IsFull())
             {
@@ -356,6 +377,43 @@ namespace WorldServer
                 Plr.SendLocalizeString("", GameData.Localized_text.TEXT_BG_PLAYER_PENDING_ANOTHER);
             else
                 new GroupInvitation(Plr, Receiver);
+        }
+
+        static public void PartyLeave(Player Plr, string Text)
+        {
+            Log.Info("PartyLeave", Text);
+
+        }
+
+        static public void PartySay(Player Plr, string Text)
+        {
+            if (Plr.GetGroup() == null)
+                return;
+
+            Plr.GetGroup().SendMessageToGroup(Plr, Text);
+        }
+
+        static public void PartyJoin(Player Plr, string Text)
+        {
+            Log.Info("PartyJoin", Text);
+
+        }
+
+        static public void PartyKick(Player Plr, string Text)
+        {
+            Log.Info("PartyKick", Text);
+
+        }
+
+        static public void PartyQuit(Player Plr, string Text)
+        {
+            Log.Info("PartyQuit", Text);
+
+        }
+
+        static public void PartyRemove(Player Plr, string Text)
+        {
+            Log.Info("PartyRemove", Text);
         }
 
         #endregion

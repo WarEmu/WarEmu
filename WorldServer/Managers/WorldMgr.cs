@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Reflection;
 
 using Common;
 using FrameWork;
@@ -13,22 +14,23 @@ namespace WorldServer
     static public class WorldMgr
     {
         static public MySQLObjectDatabase Database;
+        static public bool FastLoading = false;
 
         #region Zones
 
         static public List<Zone_Info> _Zone_Info;
+        static public Dictionary<UInt32, Zone_jump> Zone_Jumps;
 
         [LoadingFunction(true)]
         static public void LoadZone_Info()
         {
             Log.Debug("WorldMgr", "Loading Zone_Info...");
 
-            _Zone_Info = new List<Zone_Info>();
-            IList<Zone_Info> Infos = Database.SelectAllObjects<Zone_Info>();
-            if (Infos != null)
-                _Zone_Info.AddRange(Infos);
+            _Zone_Info = Database.SelectAllObjects<Zone_Info>() as List<Zone_Info>;
 
             Log.Success("LoadZone_Info", "Loaded " + _Zone_Info.Count + " Zone_Info");
+
+            LoadZoneJumps();
         }
         static public Zone_Info GetZone_Info(UInt16 ZoneId)
         {
@@ -36,43 +38,50 @@ namespace WorldServer
         }
         static public List<Zone_Info> GetZoneRegion(UInt16 RegionId)
         {
-            Log.Success("GetZoneRegion", "RegionId=" + RegionId);
             return _Zone_Info.FindAll(zone => zone != null && zone.Region == RegionId);
         }
-
-        public static Dictionary<uint, Zone_Jump> _Zone_Jump;
+        static public Zone_Info GetZoneFromOffsets(int OffsetX, int OffsetY)
+        {
+            foreach (Zone_Info Info in _Zone_Info)
+            {
+                if (OffsetX >= Info.OffX && OffsetX < Info.OffX + 16
+                    && OffsetY >= Info.OffY && OffsetY < Info.OffY + 16)
+                {
+                    return Info;
+                }
+            }
+ 
+            return null;
+        }
 
         [LoadingFunction(true)]
-        static public void LoadZone_Jump()
+        static public void LoadZoneJumps()
         {
             Log.Debug("WorldMgr", "Loading Zone_Jump...");
 
-            _Zone_Jump = new Dictionary<uint, Zone_Jump>();
-            IList<Zone_Jump> Jumps = Database.SelectAllObjects<Zone_Jump>();
-            foreach (Zone_Jump Jump in Jumps)
+            Zone_Jumps = new Dictionary<uint, Zone_jump>();
+            IList<Zone_jump> Jumps = Database.SelectAllObjects<Zone_jump>() as List<Zone_jump>;
+
+            foreach (Zone_jump Jump in Jumps)
             {
 		        Jump.ZoneInfo = GetZone_Info(Jump.ZoneID);
 
-		        if(Jump.ZoneInfo != null && !_Zone_Jump.ContainsKey(Jump.Entry))
+                if (Jump.ZoneInfo != null && !Zone_Jumps.ContainsKey(Jump.Entry))
 		        {
-			        _Zone_Jump.Add(Jump.Entry, Jump);
+                    Zone_Jumps.Add(Jump.Entry, Jump);
 		        }
 		        else
-		        {
 			        Log.Error("Zone_Jump", "Invalid Jump: " + Jump.Entry + ", Zone=" + Jump.ZoneID);
-		        }
             }
 
-            Log.Success("LoadZone_Jump", "Loaded " + _Zone_Jump .Count + " Zone_Jump");
+            Log.Success("LoadZone_Jump", "Loaded " + Zone_Jumps.Count + " Zone_Jump");
         }
 
-        static public Zone_Jump GetZoneJump(uint Entry)
+        static public Zone_jump GetZoneJump(uint Entry)
         {
-            Zone_Jump ZoneJump;
-
-            _Zone_Jump.TryGetValue(Entry, out ZoneJump);
-
-            return ZoneJump;
+            Zone_jump jump;
+            Zone_Jumps.TryGetValue(Entry, out jump);
+            return jump;
         }
 
         static public Dictionary<int, List<Zone_Area>> _Zone_Area;
@@ -207,8 +216,10 @@ namespace WorldServer
         {
             List<Zone_Taxi> L = new List<Zone_Taxi>();
 
-            foreach (Zone_Taxi[] Taxis in WorldMgr._Zone_Taxi.Values)
+            Zone_Taxi[] Taxis;
+            foreach (KeyValuePair<ushort,Zone_Taxi[]> Kp in WorldMgr._Zone_Taxi)
             {
+                Taxis = Kp.Value;
                 if (Taxis[(byte)Plr.Realm] == null || Taxis[(byte)Plr.Realm].WorldX == 0)
                     continue;
 
@@ -259,9 +270,9 @@ namespace WorldServer
         {
             List<Chapter_Info> Chapters = new List<Chapter_Info>();
 
-            foreach (Chapter_Info Info in _Chapters.Values)
-                if (Info.ZoneId == ZoneId)
-                    Chapters.Add(Info);
+            foreach (KeyValuePair<uint,Chapter_Info> Kp in _Chapters)
+                if (Kp.Value.ZoneId == ZoneId)
+                    Chapters.Add(Kp.Value);
 
             return Chapters;
         }
@@ -373,27 +384,34 @@ namespace WorldServer
 
         #region Toks
 
-        static public Dictionary<uint, Tok_Info> _Toks;
+        static public Dictionary<ushort, Tok_Info> _Toks;
+        static public List<Tok_Info> DiscoveringToks;
 
         [LoadingFunction(true)]
         static public void LoadTok_Infos()
         {
             Log.Debug("WorldMgr", "Loading LoadTok_Infos...");
 
-            _Toks = new Dictionary<uint, Tok_Info>();
+            _Toks = new Dictionary<ushort, Tok_Info>();
 
             IList<Tok_Info> IToks = Database.SelectAllObjects<Tok_Info>();
+            DiscoveringToks = new List<Tok_Info>();
 
             if (IToks != null)
             {
                 foreach (Tok_Info Info in IToks)
-                    if (!_Toks.ContainsKey(Info.Entry))
-                        _Toks.Add(Info.Entry, Info);
+                {
+                    _Toks.Add(Info.Entry, Info);
+                    if (Info.EventName.Contains("discovered") || Info.EventName.Contains("unlocked"))
+                    {
+                        DiscoveringToks.Add(Info);
+                    }
+                }
             }
 
             Log.Success("LoadTok_Infos", "Loaded " + _Toks.Count + " Tok_Infos");
         }
-        static public Tok_Info GetTok(uint Entry)
+        static public Tok_Info GetTok(ushort Entry)
         {
             if (_Toks.ContainsKey(Entry))
                 return _Toks[Entry];
@@ -413,13 +431,78 @@ namespace WorldServer
             Log.Debug("WorldMgr", "Loading Item_Info...");
 
             _Item_Info = new Dictionary<uint, Item_Info>(100000);
-            Item_Info[] Infos = Database.SelectAllObjects<Item_Info>().ToArray();
+            int i;
 
-            foreach (Item_Info Info in Infos)
-                if (!_Item_Info.ContainsKey(Info.Entry))
-                    _Item_Info.Add(Info.Entry, Info);
+            List<Item_Info> Items = Database.SelectAllObjects<Item_Info>() as List<Item_Info>;
+            foreach (Item_Info Info in Items)
+            {
+                foreach (KeyValuePair<byte, ushort> Kp in Info._Stats)
+                {
+                    if (Kp.Key >= byte.MaxValue || Kp.Value >= ushort.MaxValue)
+                    {
+                        Info.Stats = "";
+                        Info.SellPrice = 0;
+                        Info._Stats.Clear();
+                        break;
+                    }
+                }
+                foreach (KeyValuePair<uint, uint> Kp in Info._Spells)
+                {
+                    if (Kp.Key >= uint.MaxValue || Kp.Value >= uint.MaxValue)
+                    {
+                        Info.Spells = "";
+                        Info.SellPrice = 0;
+                        Info._Spells.Clear();
+                        break;
+                    }
+                }
+ 
+                foreach (KeyValuePair<byte, ushort> Kp in Info._Crafts)
+                {
+                    if (Kp.Key >= byte.MaxValue || Kp.Value >= ushort.MaxValue)
+                    {
+                        Info.Crafts = "";
+                        Info.SellPrice = 0;
+                        Info._Crafts.Clear();
+                        break;
+                    }
+                }
+
+                if (Info.Speed != 0 && Info.Dps == 0)
+                {
+                    Info.SellPrice = 0;
+                    Info.Speed = 0;
+                }
+                else if (Info.Dps != 0 && Info.Speed == 0)
+                {
+                    Info.Dps = 0;
+                    Info.SellPrice = 0;
+                }
+
+                if (Info.Unk27[4] != 3 || Info.Unk27[5] != 2)
+                {
+                    for (i = 0; i < Info.Unk27.Length; ++i)
+                    {
+                        Info.Unk27[i] = 0;
+                    }
+
+                    Info.Unk27[4] = 3;
+                    Info.Unk27[5] = 2;
+                }
+
+                _Item_Info.Add(Info.Entry, Info);
+            }
 
             Log.Success("LoadItem_Info", "Loaded " + _Item_Info.Count + " Item_Info");
+
+            foreach (Item_Info Info in Items)
+            {
+                Info.RequiredItems = new List<KeyValuePair<Item_Info, ushort>>(Info._SellRequiredItems.Count);
+                foreach (KeyValuePair<UInt32, UInt16> Kp in Info._SellRequiredItems)
+                {
+                    Info.RequiredItems.Add(new KeyValuePair<Item_Info, ushort>(GetItem_Info(Kp.Key), Kp.Value));
+                }
+            }
         }
 
         static public Item_Info GetItem_Info(uint Entry)
@@ -437,8 +520,6 @@ namespace WorldServer
 
         static public RegionMgr GetRegion(UInt16 RegionId,bool Create)
         {
-            Log.Success("GetRegion", "RegionId=" + RegionId);
-
             lock (_Regions)
             {
                 RegionMgr Mgr = _Regions.Find(region => region != null && region.RegionId == RegionId);
@@ -493,8 +574,8 @@ namespace WorldServer
             if (KLvl > VLvl + 8)
                 return 0;
 
-            UInt32 XP = VLvl * 60;
-            XP += (UInt32)Victim.Rank * 20;
+            UInt32 XP = VLvl * 70;
+            XP += (UInt32)Victim.Rank * 50;
 
             if (KLvl > VLvl)
                 XP -= (UInt32)(((float)XP / (float)100) * (KLvl - VLvl + 1)) * 5;
@@ -507,18 +588,14 @@ namespace WorldServer
 
         static public void GenerateXP(Unit Killer, Unit Victim)
         {
-            if (!Killer.IsPlayer())
-                return;
-
-            Player player = Killer.GetPlayer();
-
-            if (player.GetGroup() == null)
+             if (Killer.IsPlayer())
             {
-                player.AddXp(GenerateXPCount(player, Victim));
-            }
-            else
-            {
-                player.GetGroup().AddXp(player, Victim);
+                Player Plr = Killer.GetPlayer();
+
+                if (Plr.GetGroup() == null)
+                    Plr.AddXp(GenerateXPCount(Plr, Victim));
+                else
+                    Plr.GetGroup().AddXp(Plr, Victim);
             }
         }
 
@@ -534,11 +611,10 @@ namespace WorldServer
             Log.Debug("WorldMgr", "Loading Renown_Info...");
 
             _Renown_Infos = new Dictionary<byte, Renown_Info>();
-            Renown_Info[] Infos = Database.SelectAllObjects<Renown_Info>().ToArray();
-            foreach (Renown_Info Info in Infos)
+            foreach (Renown_Info Info in Database.SelectAllObjects<Renown_Info>())
                 _Renown_Infos.Add(Info.Level, Info);
 
-            Log.Success("LoadRenown_Info", "Loaded " + Infos.Length + " Renown_Info");
+            Log.Success("LoadRenown_Info", "Loaded " + _Renown_Infos.Count + " Renown_Info");
         }
 
         static public Renown_Info GetRenown_Info(byte Level)
@@ -556,7 +632,7 @@ namespace WorldServer
             UInt32 VRp = Victim._Value.RenownRank;
             UInt32 VLvl = Victim.Level;
 
-            UInt32 RP = VRp * 50 + VLvl * 60;
+            UInt32 RP = VRp * 4 + VLvl * 6;
 
             if (Program.Config.RenownRate > 0)
                 RP *= (UInt32)Program.Config.RenownRate;
@@ -591,11 +667,25 @@ namespace WorldServer
             Log.Debug("WorldMgr", "Loading Creature_Protos...");
 
             CreatureProtos = new Dictionary<uint, Creature_proto>();
-           IList<Creature_proto> Protos = Database.SelectObjects<Creature_proto>("Model1 != '0' AND Model2 != '0'");
 
-           if (Protos != null)
-               foreach (Creature_proto Proto in Protos)
-                   CreatureProtos.Add(Proto.Entry, Proto);
+            if (FastLoading)
+                return;
+
+            IList<Creature_proto> Protos = Database.SelectAllObjects<Creature_proto>();
+
+            if (Protos != null)
+                foreach (Creature_proto Proto in Protos)
+                {
+                   if(Proto.Model1 == 0 && Proto.Model2 == 0)
+                        Proto.Model1 = Proto.Model2 = 1;
+
+                   if (Proto.MinLevel == Proto.MaxLevel && Proto.MinLevel > 1)
+                       Proto.MaxLevel = (byte)(Proto.MinLevel + 1);
+                   else if (Proto.MaxLevel - Proto.MinLevel > 3)
+                       Proto.MaxLevel = (byte)(Proto.MinLevel + 2);
+
+                    CreatureProtos.Add(Proto.Entry, Proto);
+                }
 
            Log.Success("LoadCreatureProto", "Loaded " + CreatureProtos.Count + " Creature_Protos");
         }
@@ -607,22 +697,33 @@ namespace WorldServer
             return Proto;
         }
 
+        static public Creature_proto GetCreatureProtoByName(string Name)
+        {
+            foreach (KeyValuePair<uint, Creature_proto> Kp in CreatureProtos)
+                if (Kp.Value.Name.ToLower() == Name.ToLower())
+                    return Kp.Value;
+            return null;
+        }
+
         #endregion
 
         #region CreatureSpawns
 
         static public Dictionary<uint, Creature_spawn> CreatureSpawns;
-        static public int MaxGUID = 0;
+        static public int MaxCreatureGUID = 0;
 
-        static public int GenerateSpawnGUID()
+        static public int GenerateCreatureSpawnGUID()
         {
-            return System.Threading.Interlocked.Increment(ref MaxGUID);
+            return System.Threading.Interlocked.Increment(ref MaxCreatureGUID);
         }
 
         [LoadingFunction(true)]
         static public void LoadCreatureSpawns()
         {
             Log.Debug("WorldMgr", "Loading Creature_Spawns...");
+
+            if (FastLoading)
+                return;
 
             CreatureSpawns = new Dictionary<uint, Creature_spawn>();
             IList<Creature_spawn> Spawns = Database.SelectAllObjects<Creature_spawn>();
@@ -631,8 +732,8 @@ namespace WorldServer
                 foreach (Creature_spawn Spawn in Spawns)
                 {
                     CreatureSpawns.Add(Spawn.Guid, Spawn);
-                    if (Spawn.Guid > MaxGUID)
-                        MaxGUID = (int)Spawn.Guid;
+                    if (Spawn.Guid > MaxCreatureGUID)
+                        MaxCreatureGUID = (int)Spawn.Guid;
                 }
 
 
@@ -649,6 +750,9 @@ namespace WorldServer
         static public void LoadCreatureItems()
         {
             Log.Debug("WorldMgr", "Loading Creature_Items...");
+
+            if (FastLoading)
+                return;
 
             _CreatureItems = new Dictionary<uint, List<Creature_item>>();
             IList<Creature_item> Items = Database.SelectAllObjects<Creature_item>();
@@ -667,10 +771,41 @@ namespace WorldServer
 
         static public List<Creature_item> GetCreatureItems(uint Entry)
         {
-            if (!_CreatureItems.ContainsKey(Entry))
-                return new List<Creature_item>();
-            else
-                return _CreatureItems[Entry];
+            List<Creature_item> L;
+
+            lock (_CreatureItems)
+            {
+                if (!_CreatureItems.TryGetValue(Entry, out L))
+                {
+                    L = new List<Creature_item>();
+                    _CreatureItems.Add(Entry, L);
+                }
+            }
+
+            return L;
+        }
+
+        static public void RemoveCreatureItem(uint Entry, ushort Slot)
+        {
+            List<Creature_item> Items = GetCreatureItems(Entry);
+            Items.RemoveAll(info =>
+            {
+                if (info.SlotId == Slot)
+                {
+                    WorldMgr.Database.DeleteObject(info);
+                    return true;
+                }
+                return false;
+            });
+        }
+
+        static public void AddCreatureItem(Creature_item Item)
+        {
+            RemoveCreatureItem(Item.Entry, Item.SlotId);
+
+            List<Creature_item> Items = GetCreatureItems(Item.Entry);
+            Items.Add(Item);
+            Database.AddObject(Item);
         }
 
         #endregion
@@ -685,6 +820,9 @@ namespace WorldServer
             _CreatureTexts = new Dictionary<uint, List<Creature_text>>();
 
             Log.Debug("WorldMgr", "Loading Creature_texts...");
+
+            if (FastLoading)
+                return;
 
             IList<Creature_text> Texts = Database.SelectAllObjects<Creature_text>();
 
@@ -721,6 +859,9 @@ namespace WorldServer
         static public Dictionary<uint, List<Creature_loot>> _Creature_loots = new Dictionary<uint,List<Creature_loot>>();
         static private void LoadLoots(uint Entry)
         {
+            if (FastLoading)
+                return;
+
             if (!_Creature_loots.ContainsKey(Entry))
             {
                 Log.Debug("WorldMgr", "Loading Loots of " + Entry + " ...");
@@ -760,7 +901,7 @@ namespace WorldServer
                 if (MissingCreature > 0)
                     Log.Error("LoadLoots", "[" + MissingCreature + "] Misssing Creature proto");
 
-                Log.Success("LoadCreatureLoots", "Loaded " + _Creature_loots[Entry].Count + " loots of : " + Entry);
+                //Log.Success("LoadCreatureLoots", "Loaded " + _Creature_loots[Entry].Count + " loots of : " + Entry);
             }
         }
         static public List<Creature_loot> GetLoots(uint Entry)
@@ -781,6 +922,12 @@ namespace WorldServer
 
         static public Dictionary<uint, GameObject_proto> GameObjectProtos;
         static public Dictionary<uint, GameObject_spawn> GameObjectSpawns;
+        static public int MaxGameObjectGUID = 0;
+
+        static public int GenerateGameObjectSpawnGUID()
+        {
+            return System.Threading.Interlocked.Increment(ref MaxGameObjectGUID);
+        }
 
         [LoadingFunction(true)]
         static public void LoadGameObjectProtos()
@@ -788,6 +935,9 @@ namespace WorldServer
             Log.Debug("WorldMgr", "Loading GameObject_Protos...");
 
             GameObjectProtos = new Dictionary<uint, GameObject_proto>();
+
+            if (FastLoading)
+                return;
 
             IList<GameObject_proto> Protos = Database.SelectAllObjects<GameObject_proto>();
 
@@ -811,10 +961,17 @@ namespace WorldServer
 
             GameObjectSpawns = new Dictionary<uint, GameObject_spawn>();
 
+            if (FastLoading)
+                return;
+
             IList<GameObject_spawn> Spawns = Database.SelectAllObjects<GameObject_spawn>();
 
             foreach (GameObject_spawn Spawn in Spawns)
+            {
                 GameObjectSpawns.Add(Spawn.Guid, Spawn);
+                if (Spawn.Guid > MaxGameObjectGUID)
+                    MaxGameObjectGUID = (int)Spawn.Guid;
+            }
 
             Log.Success("WorldMgr", "Loaded " + GameObjectSpawns.Count + " GameObject_Spawns");
         }
@@ -823,11 +980,14 @@ namespace WorldServer
 
         #region Vendors
 
-        static public int MAX_ITEM_PAGE = 30;
+        static public int MAX_ITEM_PAGE = 3;
 
         static public Dictionary<uint, List<Creature_vendor>> _Vendors = new Dictionary<uint, List<Creature_vendor>>();
         static public List<Creature_vendor> GetVendorItems(uint Entry)
         {
+            if (FastLoading)
+                return new List<Creature_vendor>();
+
             if (!_Vendors.ContainsKey(Entry))
             {
                 Log.Info("WorldMgr", "Loading Vendors of " + Entry +" ...");
@@ -838,6 +998,7 @@ namespace WorldServer
 
                 _Vendors.Add(Entry, Vendors);
 
+                Item_Info Req;
                 foreach (Creature_vendor Info in Vendors.ToArray())
                 {
                     if ((Info.Info = GetItem_Info(Info.ItemId)) == null)
@@ -848,7 +1009,7 @@ namespace WorldServer
 
                     foreach (KeyValuePair<uint, UInt16> Kp in Info.ItemsReq)
                     {
-                        Item_Info Req = GetItem_Info(Kp.Key);
+                        Req = GetItem_Info(Kp.Key);
                         if (Req != null)
                             Info.ItemsReqInfo.Add(Kp.Value, Req);
                     }
@@ -871,7 +1032,6 @@ namespace WorldServer
             while (Count > 0)
             {
                 byte ToSend = (byte)Math.Min(Count, MAX_ITEM_PAGE);
-                Log.Success("SendVendor", "ToSend=" + ToSend + ",Max=" + Count);
                 if (ToSend <= Count)
                     Count -= ToSend;
                 else
@@ -888,8 +1048,6 @@ namespace WorldServer
         {
             Count = (byte)Math.Min(Count, Vendors.Count);
 
-            Log.Success("SendVendorPage", "Count=" + Count + ",Page=" + Page + ",ItmC=" + Vendors.Count);
-
             PacketOut Out = new PacketOut((byte)Opcodes.F_INIT_STORE);
             Out.WriteByte(3);
             Out.WriteByte(0);
@@ -897,12 +1055,15 @@ namespace WorldServer
             Out.WriteByte(Count);
             Out.WriteByte((byte)(Page > 0 ? 0 : 1));
             Out.WriteByte(1);
-            Out.WriteUInt16(0);
+            Out.WriteByte(0);
+
+            if (Page == 0)
+                Out.WriteByte(0);
 
             for (byte i = 0; i < Count; ++i)
             {
                 Out.WriteByte(i);
-                Out.WriteByte(3); // sometimes 1
+                Out.WriteByte(1);
                 Out.WriteUInt32(Vendors[i].Price);
                 Item.BuildItem(ref Out, null, Vendors[i].Info, 0, 1);
 
@@ -928,8 +1089,6 @@ namespace WorldServer
             int Num = (Menu.Page * MAX_ITEM_PAGE) + Menu.Num;            
             ushort Count = (ushort)(Menu.Count > 0 ? Menu.Count : 1);
             List<Creature_vendor> Vendors = GetVendorItems(Entry);
-
-            Log.Success("BuyItemVendor", "Count=" + Count + ",Num=" + Num + ",Size=" + Vendors.Count);
 
             if (Vendors.Count <= Num)
                 return;
@@ -1019,7 +1178,24 @@ namespace WorldServer
                     }break;
 
                 case Objective_Type.QUEST_SPEACK_TO:
-                    goto case Objective_Type.QUEST_KILL_MOB;
+                    {
+                        uint ObjID = 0;
+                        uint.TryParse(Obj.ObjID, out ObjID);
+ 
+                        if(ObjID != 0)
+                            Obj.Creature = GetCreatureProto(ObjID);
+
+                        if (Obj.Creature == null)
+                        {
+                            Obj.Description = "Invalid Npc,plz report to GM. QuestID " + Obj.Entry + ",ObjId=" + Obj.ObjID;
+                        }
+                        else
+                        {
+                            if (Obj.Description == null || Obj.Description.Length <= Obj.Creature.Name.Length)
+                                Obj.Description = "Speak to " + Obj.Creature.Name;
+                        }
+
+                    } break;
 
                 case Objective_Type.QUEST_KILL_MOB:
                     {
@@ -1029,8 +1205,16 @@ namespace WorldServer
                         if(ObjID != 0)
                             Obj.Creature = GetCreatureProto(ObjID);
 
-                        if (Obj.Description.Length < 1 && Obj.Creature != null)
-                            Obj.Description = Obj.Creature.Name;
+                        if (Obj.Creature == null)
+                        {
+                            Obj.Description = "Invalid Creature,plz report to GM. QuestID " + Obj.Entry + ",ObjId=" + Obj.ObjID;
+                        }
+                        else
+                        {
+                            if (Obj.Description == null || Obj.Description.Length <= Obj.Creature.Name.Length)
+                                Obj.Description = "Kill " + Obj.Creature.Name;
+                        }
+
                     } break;
 
                 case Objective_Type.QUEST_GET_ITEM:
@@ -1039,7 +1223,38 @@ namespace WorldServer
                         uint.TryParse(Obj.ObjID, out ObjID);
 
                         if (ObjID != 0)
+                        {
                             Obj.Item = GetItem_Info(ObjID);
+                            if (Obj.Item == null)
+                            {
+                                int a =Obj.Quest.Particular.ToLower().IndexOf("kill the ");
+                                if (a >= 0)
+                                {
+                                    string[] RestWords = Obj.Quest.Particular.Substring(a + 9).Split(' ');
+                                    string Name = RestWords[0] + " " + RestWords[1];
+                                    Creature_proto Proto = GetCreatureProtoByName(Name);
+                                    if (Proto == null)
+                                        Proto = GetCreatureProtoByName(RestWords[0]);
+                                    if (Proto != null)
+                                    {
+                                        Obj.Item = new Item_Info();
+                                        Obj.Item.Entry = ObjID;
+                                        Obj.Item.Name = Obj.Description;
+                                        Obj.Item.MaxStack = 20;
+                                        Obj.Item.ModelId = 531;
+                                        _Item_Info.Add(Obj.Item.Entry, Obj.Item);
+
+                                        Log.Info("WorldMgr", "Creating Quest(" + Obj.Entry + ") Item : " + Obj.Item.Entry + ",  " + Obj.Item.Name + "| Adding Loot to : " + Proto.Name);
+                                        Creature_loot loot = new Creature_loot();
+                                        loot.Entry = Proto.Entry;
+                                        loot.ItemId = Obj.Item.Entry;
+                                        loot.Info = Obj.Item;
+                                        loot.Pct = 0;
+                                        GetLoots(Proto.Entry).Add(loot);
+                                    }
+                                }
+                            }
+                        }
                     }
                     break;
             };
@@ -1054,21 +1269,24 @@ namespace WorldServer
 
         static public Dictionary<uint, List<Quest>> _CreatureStarter;
 
-        [LoadingFunction(true)]
         static public void LoadQuestCreatureStarter()
         {
             _CreatureStarter = new Dictionary<uint, List<Quest>>();
+
+            if (FastLoading)
+                return;
 
             IList<Quest_Creature_Starter> Starters = Database.SelectAllObjects<Quest_Creature_Starter>();
 
             if (Starters != null)
             {
+                Quest Q;
                 foreach (Quest_Creature_Starter Start in Starters)
                 {
                     if (!_CreatureStarter.ContainsKey(Start.CreatureID))
                         _CreatureStarter.Add(Start.CreatureID, new List<Quest>());
 
-                    Quest Q = GetQuest(Start.Entry);
+                    Q = GetQuest(Start.Entry);
 
                     if(Q != null)
                         _CreatureStarter[Start.CreatureID].Add(Q);
@@ -1077,6 +1295,7 @@ namespace WorldServer
 
             Log.Success("LoadCreatureQuests", "Loaded " + _CreatureStarter.Count + " Quests Creature Starter");
         }
+
         static public List<Quest> GetStartQuests(UInt32 CreatureID)
         {
             List<Quest> Quests;
@@ -1086,21 +1305,24 @@ namespace WorldServer
 
         static public Dictionary<uint, List<Quest>> _CreatureFinisher;
 
-        [LoadingFunction(true)]
         static public void LoadQuestCreatureFinisher()
         {
             _CreatureFinisher = new Dictionary<uint, List<Quest>>();
+
+            if (FastLoading)
+                return;
 
             IList<Quest_Creature_Finisher> Finishers = Database.SelectAllObjects<Quest_Creature_Finisher>();
 
             if (Finishers != null)
             {
+                Quest Q;
                 foreach (Quest_Creature_Finisher Finisher in Finishers)
                 {
                     if (!_CreatureFinisher.ContainsKey(Finisher.CreatureID))
                         _CreatureFinisher.Add(Finisher.CreatureID, new List<Quest>());
 
-                    Quest Q = GetQuest(Finisher.Entry);
+                    Q = GetQuest(Finisher.Entry);
 
                     if (Q != null)
                         _CreatureFinisher[Finisher.CreatureID].Add(Q);
@@ -1109,11 +1331,60 @@ namespace WorldServer
 
             Log.Success("LoadCreatureQuests", "Loaded " + _CreatureFinisher.Count + " Quests Creature Finisher");
         }
+
         static public List<Quest> GetFinishersQuests(UInt32 CreatureID)
         {
             List<Quest> Quests;
             _CreatureFinisher.TryGetValue(CreatureID, out Quests);
             return Quests;
+        }
+        static public uint GetQuestCreatureFinisher(ushort QuestId)
+        {
+            foreach (KeyValuePair<uint, List<Quest>> Kp in _CreatureFinisher)
+            {
+                foreach (Quest Q in Kp.Value)
+                    if (Q.Entry == QuestId)
+                        return Kp.Key;
+            }
+ 
+            return 0;
+        }
+
+        static public bool HasQuestToFinish(UInt32 CreatureID, UInt16 QuestID)
+        {
+            List<Quest> Quests;
+            if (_CreatureFinisher.TryGetValue(CreatureID, out Quests))
+            {
+                foreach (Quest Q in Quests)
+                    if (Q.Entry == QuestID)
+                        return true;
+            }
+
+            return false;
+        }
+
+        #endregion
+
+        #region Announces
+
+        static public List<TimedAnnounce> Announces = new List<TimedAnnounce>();
+
+        [LoadingFunction(true)]
+        static public void LoadAnnounces()
+        {
+            Announces = Database.SelectAllObjects<TimedAnnounce>() as List<TimedAnnounce>;
+        }
+
+        static public TimedAnnounce GetNextAnnounce(ref int Id, int ZoneId)
+        {
+            if (Id >= Announces.Count)
+                Id = 0;
+
+            for (; Id < Announces.Count;++Id)
+                if (Announces[Id].ZoneId == 0 || Announces[Id].ZoneId == ZoneId)
+                    return Announces[Id];
+
+            return null;
         }
 
         #endregion
@@ -1144,16 +1415,41 @@ namespace WorldServer
 
             return _RegionCells[RegionId];
         }
+        static public CSharpScriptCompiler ScriptCompiler;
 
         [LoadingFunction(false)]
         static public void LoadRelation()
         {
             Log.Success("LoadRelation", "Loading Relations");
 
+            foreach (KeyValuePair<uint,Item_Info> Info in _Item_Info)
+            {
+                if (Info.Value.Career != 0)
+                {
+                    foreach (KeyValuePair<byte, CharacterInfo> Kp in CharMgr._Infos)
+                    {
+                        if ((Info.Value.Career & (1 << (Kp.Value.CareerLine - 1))) == 0)
+                            continue;
+                        else
+                        {
+                            Info.Value.Realm = Kp.Value.Realm;
+                            break;
+                        }
+
+                    }
+                }
+            }
+
             LoadRegionSpawns();
+
+            if(Program.Config.CleanSpawns)
+                RemoveDoubleSpawns();
+
             LoadChapters();
             LoadPublicQuests();
             LoadQuestsRelation();
+            LoadScripts(false);
+            CharMgr.Database.ExecuteNonQuery("UPDATE characters_value SET Online=0;");
         }
 
         static public void LoadRegionSpawns()
@@ -1162,63 +1458,72 @@ namespace WorldServer
             Zone_Info Info = null;
             ushort X, Y = 0;
             Dictionary<string, int> RegionCount = new Dictionary<string, int>();
-            foreach (Creature_spawn Spawn in CreatureSpawns.Values)
+
             {
-                Spawn.Proto = GetCreatureProto(Spawn.Entry);
-                if (Spawn.Proto == null)
+                Creature_spawn Spawn;
+                foreach (KeyValuePair<uint, Creature_spawn> Kp in CreatureSpawns)
                 {
-                    Log.Debug("LoadRegionSpawns", "Invalid Creature Proto (" + Spawn.Entry + "), spawn Guid(" + Spawn.Guid + ")");
-                    ++InvalidSpawns;
-                    continue;
-                }
+                    Spawn = Kp.Value;
+                    Spawn.Proto = GetCreatureProto(Spawn.Entry);
+                    if (Spawn.Proto == null)
+                    {
+                        Log.Debug("LoadRegionSpawns", "Invalid Creature Proto (" + Spawn.Entry + "), spawn Guid(" + Spawn.Guid + ")");
+                        ++InvalidSpawns;
+                        continue;
+                    }
 
-                Info = GetZone_Info(Spawn.ZoneId);
-                if (Info != null)
-                {
-                    X = (UInt16)(Spawn.WorldX >> 12);
-                    Y = (UInt16)(Spawn.WorldY >> 12);
+                    Info = GetZone_Info(Spawn.ZoneId);
+                    if (Info != null)
+                    {
+                        X = (UInt16)(Spawn.WorldX >> 12);
+                        Y = (UInt16)(Spawn.WorldY >> 12);
 
-                    GetRegionCell(Info.Region,X, Y).AddSpawn(Spawn);
+                        GetRegionCell(Info.Region, X, Y).AddSpawn(Spawn);
 
-                    if (!RegionCount.ContainsKey(Info.Name))
-                        RegionCount.Add(Info.Name, 0);
+                        if (!RegionCount.ContainsKey(Info.Name))
+                            RegionCount.Add(Info.Name, 0);
 
-                    ++RegionCount[Info.Name];
-                }
-                else
-                {
-                    Log.Debug("LoadRegionSpawns", "ZoneId (" + Spawn.ZoneId + ") invalid, Spawn Guid(" + Spawn.Guid + ")");
-                    ++InvalidSpawns;
+                        ++RegionCount[Info.Name];
+                    }
+                    else
+                    {
+                        Log.Debug("LoadRegionSpawns", "ZoneId (" + Spawn.ZoneId + ") invalid, Spawn Guid(" + Spawn.Guid + ")");
+                        ++InvalidSpawns;
+                    }
                 }
             }
 
-            foreach (GameObject_spawn Spawn in GameObjectSpawns.Values)
             {
-                Spawn.Proto = GetGameObjectProto(Spawn.Entry);
-                if (Spawn.Proto == null)
+                GameObject_spawn Spawn;
+                foreach (KeyValuePair<uint,GameObject_spawn> Kp in GameObjectSpawns)
                 {
-                    Log.Debug("LoadRegionSpawns", "Invalid GameObject Proto (" + Spawn.Entry + "), spawn Guid(" + Spawn.Guid + ")");
-                    ++InvalidSpawns;
-                    continue;
-                }
+                    Spawn = Kp.Value;
+                    Spawn.Proto = GetGameObjectProto(Spawn.Entry);
+                    if (Spawn.Proto == null)
+                    {
+                        Log.Debug("LoadRegionSpawns", "Invalid GameObject Proto (" + Spawn.Entry + "), spawn Guid(" + Spawn.Guid + ")");
+                        ++InvalidSpawns;
+                        continue;
+                    }
 
-                Info = GetZone_Info(Spawn.ZoneId);
-                if (Info != null)
-                {
-                    X = (UInt16)(Spawn.WorldX >> 12);
-                    Y = (UInt16)(Spawn.WorldY >> 12);
+                    Info = GetZone_Info(Spawn.ZoneId);
+                    if (Info != null)
+                    {
+                        X = (UInt16)(Spawn.WorldX >> 12);
+                        Y = (UInt16)(Spawn.WorldY >> 12);
 
-                    GetRegionCell(Info.Region, X, Y).AddSpawn(Spawn);
+                        GetRegionCell(Info.Region, X, Y).AddSpawn(Spawn);
 
-                    if (!RegionCount.ContainsKey(Info.Name))
-                        RegionCount.Add(Info.Name, 0);
+                        if (!RegionCount.ContainsKey(Info.Name))
+                            RegionCount.Add(Info.Name, 0);
 
-                    ++RegionCount[Info.Name];
-                }
-                else
-                {
-                    Log.Debug("LoadRegionSpawns", "ZoneId (" + Spawn.ZoneId + ") invalid, Spawn Guid(" + Spawn.Guid + ")");
-                    ++InvalidSpawns;
+                        ++RegionCount[Info.Name];
+                    }
+                    else
+                    {
+                        Log.Debug("LoadRegionSpawns", "ZoneId (" + Spawn.ZoneId + ") invalid, Spawn Guid(" + Spawn.Guid + ")");
+                        ++InvalidSpawns;
+                    }
                 }
             }
 
@@ -1226,7 +1531,7 @@ namespace WorldServer
                 Log.Error("LoadRegionSpawns", "[" + InvalidSpawns + "] Invalid Spawns");
 
             foreach (KeyValuePair<string, int> Counts in RegionCount)
-                Log.Success("Region", "[" + Counts.Key + "] : " + Counts.Value);
+                Log.Debug("Region", "[" + Counts.Key + "] : " + Counts.Value);
         }
         static public void LoadChapters()
         {
@@ -1235,8 +1540,10 @@ namespace WorldServer
             long InvalidChapters = 0;
 
             Zone_Info Zone = null;
-            foreach (Chapter_Info Info in _Chapters.Values)
+            Chapter_Info Info;
+            foreach (KeyValuePair<uint,Chapter_Info> Kp in _Chapters)
             {
+                Info = Kp.Value;
                 Zone = GetZone_Info(Info.ZoneId);
 
                 if (Zone == null || (Info.PinX <= 0 && Info.PinY <= 0))
@@ -1272,8 +1579,10 @@ namespace WorldServer
         static public void LoadPublicQuests()
         {
             Zone_Info Zone = null;
-            foreach (PQuest_Info Info in _PQuests.Values)
+            PQuest_Info Info;
+            foreach (KeyValuePair<uint,PQuest_Info> Kp in _PQuests)
             {
+                Info = Kp.Value;
                 Zone = GetZone_Info(Info.ZoneId);
                 if (Zone == null)
                     continue;
@@ -1298,99 +1607,336 @@ namespace WorldServer
             LoadQuestCreatureStarter();
             LoadQuestCreatureFinisher();
 
-            foreach (Quest_Objectives Obj in _Objectives.Values)
+            foreach (KeyValuePair<uint, Creature_proto> Kp in CreatureProtos)
             {
-                Quest Q = GetQuest(Obj.Entry);
-                if (Q == null)
-                    continue;
-
-                GenerateObjectif(Obj, Q);
-
-                Obj.num = (byte)(Q.Objectives.Count+1);
-                Obj.Quest = Q;
-                Q.Objectives.Add(Obj);
+                Kp.Value.StartingQuests = GetStartQuests(Kp.Key);
+                Kp.Value.FinishingQuests = GetFinishersQuests(Kp.Key);
             }
 
-            foreach (Quest Q in _Quests.Values)
+            Quest quest;
+
+            int MaxGuid = 0;
+            foreach (KeyValuePair<int, Quest_Objectives> Kp in _Objectives)
             {
-                if (Q.Choice.Length <= 0)
+                if (Kp.Value.Guid >= MaxGuid)
+                    MaxGuid = Kp.Value.Guid;
+            }
+
+            foreach (KeyValuePair<int, Quest_Objectives> Kp in _Objectives)
+            {
+                quest = Kp.Value.Quest = GetQuest(Kp.Value.Entry);
+                if (quest == null)
+                    continue;
+
+                Kp.Value.num = (byte)(quest.Objectives.Count + 1);
+                quest.Objectives.Add(Kp.Value);
+            }
+
+            foreach (KeyValuePair<ushort, Quest> Kp in _Quests)
+            {
+                quest = Kp.Value;
+
+                if (quest.Objectives.Count == 0)
+                {
+                    UInt32 Finisher = GetQuestCreatureFinisher(quest.Entry);
+                    if (Finisher != 0)
+                    {
+                        Quest_Objectives NewObj = new Quest_Objectives();
+                        NewObj.Guid = ++MaxGuid;
+                        NewObj.Entry = quest.Entry;
+                        NewObj.ObjType = (uint)Objective_Type.QUEST_SPEACK_TO;
+                        NewObj.ObjID = Finisher.ToString();
+                        NewObj.ObjCount = 1;
+                        NewObj.num = (byte)(quest.Objectives.Count + 1);
+                        NewObj.Quest = quest;
+
+                        quest.Objectives.Add(NewObj);
+                        _Objectives.Add(NewObj.Guid, NewObj);
+
+                        Log.Debug("WorldMgr", "Creating Objective for quest with no objectives: " + Kp.Value.Entry + " " + Kp.Value.Name);
+                    }
+                }
+            }
+
+            foreach (KeyValuePair<int, Quest_Objectives> Kp in _Objectives)
+            {
+                if (Kp.Value.Quest == null)
+                    continue;
+                GenerateObjectif(Kp.Value, Kp.Value.Quest);
+            }
+
+            string sItemID, sCount;
+            uint ItemID, Count;
+            Item_Info Info;
+            foreach (KeyValuePair<ushort, Quest> Kp in _Quests)
+            {
+                if (Kp.Value.Choice.Length <= 0)
                     continue;
 
                 // [5154,12],[128,1]
-                string[] Rewards = Q.Choice.Split('[');
+                string[] Rewards = Kp.Value.Choice.Split('[');
                 foreach (string Reward in Rewards)
                 {
                     if (Reward.Length <= 0)
                         continue;
 
-                    string sItemID = Reward.Substring(0, Reward.IndexOf(','));
-                    string sCount = Reward.Substring(sItemID.Length+1, Reward.IndexOf(']') - sItemID.Length - 1);
+                    sItemID = Reward.Substring(0, Reward.IndexOf(','));
+                    sCount = Reward.Substring(sItemID.Length + 1, Reward.IndexOf(']') - sItemID.Length - 1);
 
-                    uint ItemID = uint.Parse(sItemID);
-                    uint Count = uint.Parse(sCount);
+                    ItemID = uint.Parse(sItemID);
+                    Count = uint.Parse(sCount);
 
-                    Item_Info Info = GetItem_Info(ItemID);
+                    Info = GetItem_Info(ItemID);
                     if (Info == null)
                         continue;
 
-                    if (!Q.Rewards.ContainsKey(Info))
-                        Q.Rewards.Add(Info, Count);
+                    if (!Kp.Value.Rewards.ContainsKey(Info))
+                        Kp.Value.Rewards.Add(Info, Count);
                     else
-                        Q.Rewards[Info] += Count;
+                        Kp.Value.Rewards[Info] += Count;
                 }
             }
         }
         static public void RemoveDoubleSpawns()
         {
-            uint Space = 250;
+            uint Space = 400;
             int[] Removed = new int[255];
+            List<uint> Guids = new List<uint>();
 
             Zone_Info Info = null;
-            foreach (CellSpawns[,] Cell in _RegionCells.Values)
+            int i, y, Px, Py, SPx, Spy;
+            CellSpawns[,] Cell;
+
+            foreach (KeyValuePair<ushort,CellSpawns[,]> Kp in _RegionCells)
             {
-                for (int i = 0; i < Cell.GetLength(0); ++i)
+                Cell = Kp.Value;
+                for (i = 0; i < Cell.GetLength(0); ++i)
                 {
-                    for (int y = 0; y < Cell.GetLength(1); ++y)
+                    for (y = 0; y < Cell.GetLength(1); ++y)
                     {
                         if (Cell[i, y] == null)
                             continue;
 
                         foreach (Creature_spawn Sp in Cell[i, y].CreatureSpawns.ToArray())
                         {
-                            if (Sp.Proto == null || GetStartQuests(Sp.Proto.Entry) != null)
+                            if (Sp != null || Sp.Proto == null || GetStartQuests(Sp.Proto.Entry) != null)
                                 continue;
 
                             if (Info == null || Info.ZoneId != Sp.ZoneId)
                                 Info = GetZone_Info(Sp.ZoneId);
+
+                            Px = ZoneMgr.CalculPin(Info, Sp.WorldX, true);
+                            Py = ZoneMgr.CalculPin(Info, Sp.WorldY, false);
 
                             foreach (Creature_spawn SubSp in Cell[i, y].CreatureSpawns.ToArray())
                             {
                                 if (SubSp.Proto == null || Sp.Entry != SubSp.Entry || Sp == SubSp)
                                     continue;
 
-                                if (ZoneMgr.CalculPin(Info, Sp.WorldX, true) > ZoneMgr.CalculPin(Info, SubSp.WorldX, true) + Space || ZoneMgr.CalculPin(Info, Sp.WorldX, true) < ZoneMgr.CalculPin(Info, SubSp.WorldX, true) - Space)
+                                SPx = ZoneMgr.CalculPin(Info, SubSp.WorldX, true);
+
+                                if (Px > SPx + Space || Px < SPx - Space)
                                     continue;
 
-                                if (ZoneMgr.CalculPin(Info, Sp.WorldY, false) > ZoneMgr.CalculPin(Info, SubSp.WorldY, false) + Space || ZoneMgr.CalculPin(Info, Sp.WorldY, false) < ZoneMgr.CalculPin(Info, SubSp.WorldY, false) - Space)
-                                    continue;
+                                Spy = ZoneMgr.CalculPin(Info, SubSp.WorldY, true);
 
-                                /*if (Sp.WorldZ > SubSp.WorldZ/2 + Space || Sp.WorldZ < SubSp.WorldZ/2 - Space)
-                                    continue;*/
+                                if (Py > Spy + Space || Py < Spy - Space)
+                                    continue;
 
                                 Removed[SubSp.ZoneId]++;
+                                Guids.Add(SubSp.Guid);
+                                Cell[i, y].CreatureSpawns.Remove(SubSp);
                                 SubSp.Proto = null;
-                                Database.DeleteObject(SubSp);
                             }
                         }
                     }
                 }
             }
 
-            for (int i = 0; i < 255; ++i)
+            if (Guids.Count > 0)
+            {
+                string L = "(";
+                foreach (uint Guid in Guids)
+                {
+                    L += Guid + ",";
+                }
+
+                L = L.Remove(L.Length - 1, 1);
+                L += ")";
+
+                Log.Info("Spawns", "DELETE FROM creature_spawns WHERE Guid in " + L + ";");
+                Database.ExecuteNonQuery("DELETE FROM creature_spawns WHERE Guid in " + L +";");
+            }
+
+
+            for (i = 0; i < 255; ++i)
             {
                 if (Removed[i] != 0)
                     Log.Info("Removed", "Zone : " + i + " : " + Removed[i]);
             }
+        }
+
+        #endregion
+
+        #region Mounts
+
+        static public Dictionary<uint, Mount_Info> _Mounts = new Dictionary<uint, Mount_Info>();
+
+        [LoadingFunction(true)]
+        static public void LoadMounts()
+        {
+            List<Mount_Info> Mounts = Database.SelectAllObjects<Mount_Info>() as List<Mount_Info>;
+            foreach (Mount_Info M in Mounts)
+                _Mounts.Add(M.Id, M);
+
+            Log.Success("Mounts", "Loaded " + _Mounts.Count + " Mounts");
+        }
+
+        static public Mount_Info GetMount(uint Id)
+        {
+            Mount_Info M;
+            _Mounts.TryGetValue(Id, out M);
+            return M;
+        }
+
+        #endregion
+
+        #region Scripts
+
+        static public Dictionary<string, Type> LocalScripts = new Dictionary<string, Type>();
+        static public Dictionary<string, AGeneralScript> GlobalScripts = new Dictionary<string, AGeneralScript>();
+        static public Dictionary<uint, Type> CreatureScripts = new Dictionary<uint, Type>();
+        static public Dictionary<uint, Type> GameObjectScripts = new Dictionary<uint, Type>();
+        static public ScriptsInterface GeneralScripts;
+
+        static public void LoadScripts(bool Reload)
+        {
+            GeneralScripts = new ScriptsInterface();
+
+            ScriptCompiler = new CSharpScriptCompiler();
+            ScriptCompiler.LoadScripts();
+            GeneralScripts.ClearScripts();
+
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                foreach (Type type in assembly.GetTypes())
+                {
+                    if (type.IsClass != true)
+                        continue;
+
+                    if (!type.IsSubclassOf(typeof(AGeneralScript)))
+                        continue;
+
+                    foreach (GeneralScriptAttribute at in type.GetCustomAttributes(typeof(GeneralScriptAttribute), true))
+                    {
+                        if (at.ScriptName != null && at.ScriptName != "")
+                            at.ScriptName = at.ScriptName.ToLower();
+
+                        Log.Success("Scripting", "Resgistering Script :" + at.ScriptName );
+
+                        if (at.GlobalScript)
+                        {
+                            AGeneralScript Script = Activator.CreateInstance(type) as AGeneralScript;
+                            Script.ScriptName = at.ScriptName;
+                            GeneralScripts.RemoveScript(Script.ScriptName);
+                            GeneralScripts.AddScript(Script);
+                            GlobalScripts[at.ScriptName] = Script;
+                        }
+                        else
+                        {
+                            if (at.CreatureEntry != 0)
+                            {
+                                Log.Success("Scripts", "Registering Creature Script :" + at.CreatureEntry);
+
+                                if (!CreatureScripts.ContainsKey(at.CreatureEntry))
+                                {
+                                    CreatureScripts[at.CreatureEntry] = type;
+                                }
+                                else
+                                {
+                                    CreatureScripts[at.CreatureEntry] = type;
+                                }
+                            }
+                            else if (at.GameObjectEntry != 0)
+                            {
+                                Log.Success("Scripts", "Registering GameObject Script :" + at.GameObjectEntry);
+
+                                if (!GameObjectScripts.ContainsKey(at.GameObjectEntry))
+                                {
+                                    GameObjectScripts[at.GameObjectEntry] = type;
+                                }
+                                else
+                                {
+                                    GameObjectScripts[at.GameObjectEntry] = type;
+                                }
+                            }
+                            else if(at.ScriptName != null && at.ScriptName != "")
+                            {
+                                Log.Success("Scripts", "Registering Name Script :" + at.ScriptName);
+
+                                if (!LocalScripts.ContainsKey(at.ScriptName))
+                                {
+                                    LocalScripts[at.ScriptName] = type;
+                                }
+                                else
+                                {
+                                    LocalScripts[at.ScriptName] = type;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Log.Success("Scripting", "Loaded  : " + (GeneralScripts.Scripts.Count + LocalScripts.Count) + " Scripts");
+
+            if (Reload)
+            {
+                if (Program.Server != null)
+                    Program.Server.LoadPacketHandler();
+
+                AbilityMgr.LoadAbilityHandlers();
+            }
+        }
+
+        static public AGeneralScript GetScript(Object Obj, string ScriptName)
+        {
+            if (ScriptName != null && ScriptName.Length > 0)
+            {
+                ScriptName = ScriptName.ToLower();
+
+                if (GlobalScripts.ContainsKey(ScriptName))
+                    return GlobalScripts[ScriptName];
+                else if (LocalScripts.ContainsKey(ScriptName))
+                {
+                    AGeneralScript Script = Activator.CreateInstance(LocalScripts[ScriptName]) as AGeneralScript;
+                    Script.ScriptName = ScriptName;
+                    return Script;
+                }
+            }
+            else
+            {
+                if (Obj.IsCreature() && CreatureScripts.ContainsKey(Obj.GetCreature().Spawn.Entry))
+                {
+                    AGeneralScript Script = Activator.CreateInstance(CreatureScripts[Obj.GetCreature().Spawn.Entry]) as AGeneralScript;
+                    Script.ScriptName = Obj.GetCreature().Spawn.Entry.ToString();
+                    return Script;
+                }
+
+                if (Obj.IsGameObject() && GameObjectScripts.ContainsKey(Obj.GetGameObject().Spawn.Entry))
+                {
+                    AGeneralScript Script = Activator.CreateInstance(GameObjectScripts[Obj.GetGameObject().Spawn.Entry]) as AGeneralScript;
+                    Script.ScriptName = Obj.GetGameObject().Spawn.Entry.ToString();
+                    return Script;
+                }
+            }
+
+            return null;
+        }
+
+        static public void UpdateScripts(long Tick)
+        {
+            GeneralScripts.Update(Tick);
         }
 
         #endregion

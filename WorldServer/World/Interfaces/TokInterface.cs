@@ -11,12 +11,7 @@ namespace WorldServer
 {
     public class TokInterface : BaseInterface
     {
-        public Dictionary<UInt32, Character_tok> _Toks = new Dictionary<uint, Character_tok>();
-        public TokInterface(Object Obj)
-            : base(Obj)
-        {
-
-        }
+        public Dictionary<ushort, Character_tok> _Toks = new Dictionary<ushort, Character_tok>();
 
         public void Load(List<Character_tok> Toks)
         {
@@ -26,9 +21,21 @@ namespace WorldServer
 
             base.Load();
         }
-        public bool HasTok(UInt32 Entry)
+        public override void Save()
+        {
+            foreach (KeyValuePair<ushort, Character_tok> Kp in _Toks)
+                CharMgr.Database.SaveObject(Kp.Value);
+        }
+
+        public bool HasTok(ushort Entry)
         {
             return _Toks.ContainsKey(Entry);
+        }
+
+        public void AddTok(Tok_Info Info)
+        {
+            if (Info != null)
+                AddTok(Info.Entry);
         }
         public void AddTok(ushort Entry)
         {
@@ -55,17 +62,14 @@ namespace WorldServer
         }
         public void SendAllToks()
         {
-            if (!HasPlayer())
-                return;
+            foreach (KeyValuePair<ushort, Character_tok> Kp in _Toks)
+                SendTok(Kp.Value.TokEntry, false);
 
-            foreach (Character_tok Tok in _Toks.Values)
-                SendTok(Tok.TokEntry, false);
+            foreach (Tok_Info Info in WorldMgr.DiscoveringToks)
+                SendTok(Info.Entry, false);
         }
-        public void SendTok(UInt32 Entry, bool Print)
+        public void SendTok(ushort Entry, bool Print)
         {
-            if (!HasPlayer())
-                return;
-
             PacketOut Out = new PacketOut((byte)Opcodes.F_TOK_ENTRY_UPDATE);
             Out.WriteUInt32(1);
             Out.WriteUInt16((UInt16)Entry);

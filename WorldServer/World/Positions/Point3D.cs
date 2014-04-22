@@ -90,11 +90,29 @@ namespace WorldServer
         /// <returns>Distance to point</returns>
         public virtual int GetDistanceTo(IPoint3D point)
         {
-            double dx = (double)X - point.X;
-            double dy = (double)Y - point.Y;
+            double dx = (double)(X - point.X);
+            double dy = (double)(Y - point.Y);
             double Range = Math.Sqrt(dx * dx + dy * dy);
+            Range = Range / Lerp(36.0, 13.50, Clamp(Range, 900));
+            return (int)(Range);
+        }
 
-            return (int)(Range / Point2D.Lerp(36.0, 13.5, Point2D.Clamp(Range, 900.0)));
+        /// <summary>
+        /// Get the distance to a point
+        /// </summary>
+        /// <remarks>
+        /// If you don't actually need the distance value, it is faster
+        /// to use IsWithinRadius (since it avoids the square root calculation)
+        /// </remarks>
+        /// <param name="point">Target point</param>
+        /// <returns>Distance to point</returns>
+        public virtual int GetDistanceTo(float x, float y, float z)
+        {
+            double dx = (double)(X - x);
+            double dy = (double)(Y - y);
+            double Range = Math.Sqrt(dx * dx + dy * dy);
+            Range = Range / Lerp(36.0, 13.50, Clamp(Range, 900));
+            return (int)(Range);
         }
 
         /// <summary>

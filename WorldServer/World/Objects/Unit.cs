@@ -60,7 +60,8 @@ namespace WorldServer
                 case 130: goto case 135;
                 case 135:
                     Type = GameData.InteractType.INTERACTTYPE_DYEMERCHANT;
-                break;
+                    break;
+                case 144: goto case 40;
 
             };
 
@@ -74,17 +75,19 @@ namespace WorldServer
 
         public Point3D SpawnPoint = new Point3D(0, 0, 0);
         public UInt16 SpawnHeading = 0;
+        public bool StateDirty = false;
+        public bool IsInvinsible = false;
 
         public Unit()
             : base()
         {
-            ItmInterface = new ItemsInterface(this);
-            CbtInterface = new CombatInterface(this);
-            StsInterface = new StatsInterface(this);
-            QtsInterface = new QuestsInterface(this);
-            MvtInterface = new MovementInterface(this);
-            AbtInterface = new AbilityInterface(this);
-            AiInterface = new AIInterface(this);
+            ItmInterface = AddInterface<ItemsInterface>();
+            CbtInterface = AddInterface<CombatInterface>();
+            StsInterface = AddInterface<StatsInterface>();
+            QtsInterface = AddInterface<QuestsInterface>();
+            MvtInterface = AddInterface<MovementInterface>();
+            AbtInterface = AddInterface<AbilityInterface>();
+            AiInterface = AddInterface<AIInterface>();
         }
 
         public override void OnLoad()
@@ -93,49 +96,37 @@ namespace WorldServer
             SpawnPoint.Y = Y;
             SpawnPoint.Z = Z;
             SpawnHeading = Heading;
-            if (EvtInterface == null)
-                EvtInterface = new EventInterface(this);
-
-            AiInterface.Load();
             base.OnLoad();
+            StateDirty = false;
         }
 
         public override void Dispose()
         {
-            ItmInterface.Stop();
-            CbtInterface.Stop();
-            StsInterface.Stop();
-            QtsInterface.Stop();
-            MvtInterface.Stop();
-            AbtInterface.Stop();
-            EvtInterface.Stop();
-            AiInterface.Stop();
-
             base.Dispose();
         }
-        public override void Update()
+        public override void Update(long Tick)
         {
-            long Tick = TCPManager.GetTimeStampMS();
-
-            UpdateHealth(Tick);
-            UpdateActionPoints(Tick);
-            EvtInterface.Update(Tick);
-
-            CbtInterface.Update(Tick);
-            ItmInterface.Update(Tick);
-            StsInterface.Update(Tick);
-            QtsInterface.Update(Tick);
-            MvtInterface.Update(Tick);
-            AbtInterface.Update(Tick);
-            AiInterface.Update(Tick);
+            if (!IsDead)
+            {
+                UpdateHealth(Tick);
+                UpdateActionPoints(Tick);
+                UpdateSpeed(Tick);
+            }
 
             if (NextSend < Tick)
             {
                 NextSend = Tick + STATE_INTERVAL;
-                SendState(null);
+                StateDirty = true;
             }
 
-            base.Update();
+            base.Update(Tick);
+
+            if (StateDirty)
+            {
+                NextSend = Tick + STATE_INTERVAL;
+                StateDirty = false;
+                SendState(null);
+            }
         }
 
         #region Sender
@@ -146,29 +137,83 @@ namespace WorldServer
         {
             ItmInterface.SendEquiped(Plr);
             SendState(Plr);
+            MvtInterface.CurrentMount.SendMount(Plr);
             base.SendMeTo(Plr);
         }
-        public virtual void SendState(Player Plr)
+        public virtual void SendState(Player Plr, ushort TargetX, ushort TargetY, ushort TargetZ, byte MovementType)
         {
-            if (IsPlayer())
-                return;
-
-            if (!IsInWorld())
-                return;
-
             PacketOut Out = new PacketOut((byte)Opcodes.F_OBJECT_STATE);
             Out.WriteUInt16(Oid);
             Out.WriteUInt16((ushort)X);
             Out.WriteUInt16((ushort)Y);
             Out.WriteUInt16((ushort)Z);
             Out.WriteByte(PctHealth);
-            Out.WriteUInt16(Zone.ZoneId);
-            Out.Fill(0, 5);
-            Out.WriteUInt16R(Heading);
+            Out.WriteByte(MovementType); // Movement Type 0 None, 1 Walk, 2 ?, 3 Run
+            Out.WriteByte((byte)Zone.ZoneId);
+            Out.Fill(0, 4);
+
+            if(MovementType < 3)
+                Out.WriteUInt16(0x55);
+            else
+                Out.WriteUInt16(0XEB); // ? 0XEB
+
+            Out.WriteByte(0);
+            Out.WriteUInt16(0x75); // ? 0xCE
+
+            Out.WriteUInt16(TargetX);
+            Out.WriteUInt16(TargetY);
+            Out.WriteByte(0);
+            Out.WriteByte((byte)Zone.ZoneId);
+            Out.WriteUInt16(0x5300);
+
+            //Log.Dump("Test", Out, true);
+
+            //Out.WriteUInt16(7018);
+
             if (Plr == null)
                 DispatchPacket(Out, false);
             else
                 Plr.SendPacket(Out);
+        }
+
+        public virtual void SendState(Player Plr)
+        {
+            if (!IsInWorld())
+                return;
+
+            if (MvtInterface.CurrentSpeed != 0 && !IsPlayer())
+            {
+                SendState(Plr, (ushort)MvtInterface.TargetPosition.X, (ushort)MvtInterface.TargetPosition.Y, (ushort)MvtInterface.TargetPosition.Z, (byte)(MvtInterface.CurrentSpeed >= 50 ? 3 : 1));
+            }
+            else
+            {
+                PacketOut Out = new PacketOut((byte)Opcodes.F_OBJECT_STATE);
+                Out.WriteUInt16(Oid);
+                Out.WriteUInt16((ushort)X);
+                Out.WriteUInt16((ushort)Y);
+                Out.WriteUInt16((ushort)Z);
+                Out.WriteByte(PctHealth);
+                Out.WriteByte(0); // Movement Type 0 None, 1 Walk, 2 ?, 3 Run
+                Out.WriteByte((byte)Zone.ZoneId);
+                Out.Fill(0, 5);
+                Out.WriteUInt16R(Heading);
+
+                if (Plr == null)
+                    DispatchPacket(Out, false);
+                else
+                    Plr.SendPacket(Out);
+            }
+
+            if (MvtInterface.CurrentSpeed != 0)
+                SendAnimation();
+        }
+
+        public virtual void SendAnimation()
+        {
+            PacketOut Out = new PacketOut((byte)Opcodes.F_ANIMATION);
+            Out.WriteUInt16(Oid);
+            Out.WriteUInt32(0);
+            DispatchPacket(Out, false);
         }
 
         #endregion
@@ -200,12 +245,39 @@ namespace WorldServer
                 if (IsPlayer())
                     GetPlayer().SendHealh();
                 else
-                    SendState(null);
+                    StateDirty = true;
             }
         }
 
-        public UInt16 ActionPoints = 0;
+        public UInt16 _ActionPoints = 0;
+        public UInt16 ActionPoints
+        {
+            get
+            {
+                return _ActionPoints;
+            }
+            set
+            {
+                if (value > MaxActionPoints)
+                    value = MaxActionPoints;
+
+                if (_ActionPoints != value)
+                {
+                    _ActionPoints = value;
+
+                    if (IsPlayer())
+                        GetPlayer().SendHealh();
+                }
+            }
+        }
         public UInt16 MaxActionPoints = 250;
+        public long NextHpRegen = 0;
+        public long NextApRegen = 0;
+ 
+        public void ResetNextActionPoints(long MSTime)
+        {
+            NextApRegen = TCPManager.GetTimeStampMS() + MSTime;
+        }
 
         public uint TotalHealth { get { return MaxHealth + BonusHealth; } }
         public byte PctHealth { get { return (byte)((Health * 100) / TotalHealth); } }
@@ -221,7 +293,6 @@ namespace WorldServer
             } 
         }
 
-        public long NextHpRegen = 0;
         public void UpdateHealth(long Tick)
         {
             if (Tick >= NextHpRegen)
@@ -231,7 +302,7 @@ namespace WorldServer
                 if (CbtInterface.IsFighting())
                     return;
 
-                if (!IsDead && Health < TotalHealth)
+                if (Health < TotalHealth)
                 {
                     uint Regen = TotalHealth / 8;
 
@@ -243,154 +314,181 @@ namespace WorldServer
             }
         }
 
-        public long NextApRegen = 0;
         public void UpdateActionPoints(long Tick)
         {
             if (Tick >= NextApRegen)
             {
-                NextApRegen = Tick + ACTION_REGEN_TIME;
-
-                if (AbtInterface.IsCasting())
+                if (AbtInterface.IsOnGlobalCooldown())
+                {
+                    NextApRegen = Tick + 300;
                     return;
+                }
 
-                UInt16 Regen = 25; // 25 + items bonus
+                NextApRegen = Tick + ACTION_REGEN_TIME;
 
                 if (ActionPoints < MaxActionPoints)
                 {
-                    ActionPoints += Regen;
+                    ActionPoints += 25;
 
                     if (ActionPoints > MaxActionPoints)
                         ActionPoints = MaxActionPoints;
-
-                    if (IsPlayer())
-                        GetPlayer().SendHealh();
                 }
             }
         }
 
-        public virtual void Strike(Unit Target)
+        public virtual void Strike(Unit Target, EquipSlot Slot = EquipSlot.MAIN_DROITE)
         {
             if (Target == null || Target.IsDead)
                 return;
 
-            int Damage = 0;
-            int DmgReduce = 0;
-            int RealDamage = 0;
+            float Damage = 0;
+            float DmgReduce = 0;
+            float RealDamage = 0;
 
-            Damage = StsInterface.CalculDamage();
+            Damage = StsInterface.CalculDamage(Slot, Target);
             DmgReduce = Target.StsInterface.CalculReduce();
-
             DmgReduce = Math.Min(75, DmgReduce);
 
-            RealDamage = (int)(Damage-( (float)(DmgReduce/100 * DmgReduce)));
+            RealDamage = (Damage-((DmgReduce/100f * DmgReduce)));
+            if (RealDamage <= 2)
+                RealDamage = 2;
 
-            //Log.Success("Strike","["+ Name + "] Strike -> " + Target.Name +"Dmg="+Damage+",Reduce="+DmgReduce);
-
-            SendAttackState(Target, (UInt16)RealDamage, (UInt16)Damage);
-            SendAttackMovement(Target, null);
-            DealDamage(Target,RealDamage,Damage,0);
+            SendAttackMovement(Target);
+            DealDamages(Target, null, (uint)RealDamage);
         }
-        public void SendAttackState(Unit Target, UInt16 RealDamage, UInt16 Damage, Ability_Info Ability = null)
+        public void SendCastEffect(Unit Target, ushort AbilityEntry, GameData.CombatEvent Event, uint Count)
         {
-            if (Target == null)
-                return;
-
-            // Frappe
-            {
-                PacketOut Out = new PacketOut((byte)Opcodes.F_USE_ABILITY);
-                Out.WriteUInt16(0);
-
-                Out.WriteUInt16(Ability != null ? Ability.Entry : Oid);
-                Out.WriteUInt16(Oid);
-
-                Out.WriteUInt16((ushort)(Ability != null ? 0x610 : 0));
-                Out.WriteUInt16(Target.Oid);
-
-                if (Ability != null)
-                {
-                    Out.WriteByte(6);
-                    Out.WriteByte(1);
-                    Out.WriteUInt16(0);
-                    Out.WriteUInt32(0x023F0C00);
-                    Out.WriteUInt16(0);
-                }
-                else
-                {
-                    Out.WriteByte(2);
-                    Out.Fill(0, 9);
-                }
-
-                DispatchPacket(Out, true);
-            }
-
+            if (IsPlayer())
             {
                 PacketOut Out = new PacketOut((byte)Opcodes.F_CAST_PLAYER_EFFECT);
                 Out.WriteUInt16(Oid);
                 Out.WriteUInt16(Target.Oid);
-
-                Out.WriteUInt16((ushort)(Ability != null ? Ability.Entry : 0));
-                Out.WriteByte((byte)(Ability != null ? 2 : 0));
-
-                if(Ability == null)
-                    Out.WriteByte((byte)GameData.CombatEvent.COMBATEVENT_HIT);
-                else
-                    Out.WriteByte((byte)GameData.CombatEvent.COMBATEVENT_ABILITY_HIT);
-
-                Out.WriteByte((byte)(Ability != null ? 7 : 0x13));
-
-                if (Ability == null)
-                {
-                    Out.WriteByte((byte)(RealDamage > 0 ? (RealDamage * 2) - 1 : 0));
-                    Out.WriteByte((byte)((Damage - RealDamage) * 2));
-                }
-                else
-                    Out.WriteUInt16(0x0799);
-
+                Out.WriteUInt16(AbilityEntry);
                 Out.WriteByte(0);
-                DispatchPacket(Out, true);
+                Out.WriteByte((byte)Event);
+                Out.WriteByte(0x13);
+                Out.WriteByte((byte)((128 + (Count % 64) * 2) + 1));
+                Out.WriteByte((byte)(Count / 64));
+                Out.WriteByte(0);
+                DispatchGroup(Out);
+            }
+
+            if (Target != this && Target.IsPlayer())
+            {
+                PacketOut Out = new PacketOut((byte)Opcodes.F_CAST_PLAYER_EFFECT);
+                Out.WriteUInt16(Oid);
+                Out.WriteUInt16(Target.Oid);
+                Out.WriteUInt16(AbilityEntry);
+                Out.WriteByte(0);
+                Out.WriteByte((byte)Event);
+                Out.WriteByte(0x13);
+                Out.WriteByte((byte)((128 + (Count % 64) * 2) + 1));
+                Out.WriteByte((byte)(Count / 64));
+                Out.WriteByte(0);
+                Target.DispatchGroup(Out);
             }
         }
-        public void SendAttackMovement(Unit Target,Ability_Info Info)
+
+        public void SendAttackMovement(Unit Target)
         {
-            PacketOut Out = new PacketOut((byte)Opcodes.F_HIT_PLAYER);
+            PacketOut Out = new PacketOut((byte)Opcodes.F_USE_ABILITY);
+            Out.WriteUInt16(0);
             Out.WriteUInt16(Oid);
-
-            if(Target != null)
-                Out.WriteUInt16(Target.Oid);
-
-            if (Info != null)
-                Out.WriteUInt16(Info.Entry);
-
+            Out.WriteUInt16(Oid);
+            Out.WriteUInt16(0);
+            Out.WriteUInt16(Target.Oid);
             Out.WriteByte(2);
-
-            if (Info == null && Target != null)
-            {
-                Out.WriteByte(Target.PctHealth);
-                Out.WriteByte(Target.PctHealth);
-            }
-
-            Out.WriteByte(0);
+            Out.Fill(0, 9);
             DispatchPacket(Out, true);
         }
-        public virtual void DealDamage(Unit Target, int RealDamage, int Mitiged, byte Event)
+
+        /// <summary>
+        /// Deal Damages but check abilities buff reductions (absorb, invinsibility, etc)
+        /// </summary>
+        public virtual void DealDamages(Unit Target, Ability Ab, uint Damages)
+        {
+            AbtInterface.OnDealDamages(Target, Ab, ref Damages);
+            Target.AbtInterface.OnReceiveDamages(this, Ab, ref Damages);
+
+            if (Ab != null) // Ability Damage
+            {
+                Ab.SendSpellDamage(Target, Damages, false);
+                Ab.SendSpellEffect(this, Target, (ushort)Damages, (ushort)Damages, Ab.Info);
+            }
+            else // Weapon
+            {
+                SendCastEffect(Target, 0, GameData.CombatEvent.COMBATEVENT_HIT, Damages);
+            }
+
+            DealDamages(Target, (uint)Damages);
+        }
+
+        /// <summary>
+        /// Deal direct damage , no calculations
+        /// </summary>
+        public virtual void DealDamages(Unit Target, uint Damages)
         {
             if (Target == null || Target.IsDead)
                 return;
 
-            //Log.Success("DealDamage",Name + " Deal " + RealDamage + "/"+Target.Health + "/"+Target.PctHealth + "% To " + Target.Name);
-            CbtInterface.OnDealDamage(Target, (UInt32)RealDamage);
+            CbtInterface.OnDealDamage(Target, Damages);
+            Target.CbtInterface.OnTakeDamage(this, Damages);
 
-            if (Target.Health <= RealDamage)
+            if (Target.IsInvinsible)
+                return;
+
+            if (IsCreature() && Target.IsCreature())
+                return;
+
+            if (Target.Health <= Damages)
             {
                 Target.SetDeath(this);
                 CbtInterface.OnTargetDie(Target);
             }
             else
             {
-                Target.Health -= (uint)RealDamage;
-                Target.CbtInterface.OnTakeDamage(this, (UInt32)RealDamage);
+                Target.Health -= Damages;
             }
         }
+
+        /// <summary>
+        /// Deal Heal, check abilities buff (heal bonus , etc )
+        /// </summary>
+        public virtual void DealHeal(Unit Target, Ability Ab, uint Heal)
+        {
+            AbtInterface.OnDealHeals(Target, Ab, ref Heal);
+            Target.AbtInterface.OnReceiveHeal(this, Ab, ref Heal);
+
+            if (Ab != null)
+            {
+                Ab.SendSpellDamage(Target, Heal, true);
+                Ab.SendSpellEffect(this, Target, (ushort)Heal, (ushort)Heal, Ab.Info);
+            }
+
+            DealHeal(Target, (uint)Heal);
+        }
+
+        /// <summary>
+        /// Direct Heal , no calculation
+        /// </summary>
+        public virtual void DealHeal(Unit Target, uint Value)
+        {
+            if (Target == null || Target.IsDead)
+                return;
+
+            CbtInterface.OnDealHeal(Target, Value);
+            Target.CbtInterface.OnTakeHeal(this, Value);
+
+            if (Value + Target.Health > Target.MaxHealth)
+                Target.Health = Target.MaxHealth;
+            else
+                Target.Health += Value;
+        }
+
+        /// <summary>
+        /// Kill this unit, Generate Xp and Loots
+        /// </summary>
+        /// <param name="Killer"></param>
         public virtual void SetDeath(Unit Killer)
         {
             Health = 0;
@@ -409,6 +507,8 @@ namespace WorldServer
 
             WorldMgr.GenerateXP(Killer, this);
             GenerateLoot(Killer);
+
+            EvtInterface.Notify(EventName.ON_DIE, this, null);
         }
 
         public virtual void RezUnit()
@@ -416,6 +516,9 @@ namespace WorldServer
             CbtInterface.Evade();
             States.Remove(3); // Death State
             Health = TotalHealth;
+            Region.UpdateRange(this, true);
+
+            EvtInterface.Notify(EventName.ON_REZURECT, this, null);
         }
 
         #endregion
@@ -467,18 +570,20 @@ namespace WorldServer
 
         #region Values
 
-        public UInt16 _Speed = 100;
         public UInt16 Speed
         {
-            get { return _Speed; }
+            get 
+            { 
+                return (UInt16)((float)StsInterface.Speed + (((float)StsInterface.Speed * (float)StsInterface.BonusSpeed) * 0.01f)); 
+            }
             set
             {
-                _Speed = value;
+                StsInterface.Speed = value;
                 if (IsPlayer())
-                    GetPlayer().SendSpeed();
+                    GetPlayer().SendSpeed(CanMove() ? Speed : (ushort)0);
             }
         }
-
+        public long NextAllowedMovements = 0;
         private byte _Level = 1;
         public byte Level
         {
@@ -562,6 +667,32 @@ namespace WorldServer
 
             if (Agressive)
                 AiInterface.SetBrain(new AgressiveBrain(AiInterface));
+        }
+
+        public void DisableMovements(long MSTime)
+        {
+            NextAllowedMovements = TCPManager.GetTimeStampMS() + MSTime;
+            Log.Info("DisableMovements", "NextAllowedMovements: " + NextAllowedMovements + ",Time=" + MSTime);
+            if (IsPlayer())
+                GetPlayer().SendSpeed(0);
+        }
+
+        public bool CanMove()
+        {
+            return NextAllowedMovements == 0;
+        }
+
+        public void UpdateSpeed(long Tick)
+        {
+            if (NextAllowedMovements != 0 && NextAllowedMovements < Tick)
+            {
+                Log.Info("UpdateSpeed", "Can move : " + CanMove());
+                NextAllowedMovements = 0;
+                if (IsPlayer())
+                    GetPlayer().SendSpeed(Speed);
+                else
+                    MvtInterface.CancelWalkTo();
+            }
         }
 
         #endregion

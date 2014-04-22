@@ -267,6 +267,19 @@ namespace Common
             Rm.DestructionCount = DestructionCount;
         }
 
+        public void UpdateRealmCharacters(byte RealmId, uint OrderCharacters, uint DestruCharacters)
+        {
+            Realm Rm = GetRealm(RealmId);
+
+            if (Rm == null)
+                return;
+
+            Rm.OrderCharacters = OrderCharacters;
+            Rm.DestruCharacters = DestruCharacters;
+            Rm.Dirty = true;
+            Database.ExecuteNonQuery("UPDATE realms SET OrderCharacters =" + OrderCharacters + ", DestruCharacters=" + DestruCharacters + " WHERE RealmId = " + RealmId);
+        }
+
         private ClusterProp setProp(string name, string value)
         {
             return ClusterProp.CreateBuilder().SetPropName(name)

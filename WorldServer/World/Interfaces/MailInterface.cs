@@ -15,12 +15,6 @@ namespace WorldServer
         UInt32 nextSend = 0;
         uint MAIL_PRICE = 30;
 
-        public MailInterface(Object Obj)
-            : base(Obj)
-        {
-
-        }
-
         public void Load(IList<Character_mail> Mails)
         {
             if (Mails != null)
@@ -32,7 +26,7 @@ namespace WorldServer
             }
 
             base.Load();
-            Log.Success("MailInterface", "Loaded " + _Mails.Count + " Mails of " + Obj.Oid);
+            Log.Success("MailInterface", "Loaded " + _Mails.Count + " Mails of " + _Owner.Oid);
         }
 
         public void BuildMail(PacketIn packet)

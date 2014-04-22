@@ -177,21 +177,31 @@ namespace WorldServer
 		/// <returns>Distance to point</returns>
 		public int GetDistance(IPoint2D point)
 		{
-			double dx = (double) X - point.X;
-			double dy = (double) Y - point.Y;
+            double dx = (double)(X - point.X);
+            double dy = (double)(Y - point.Y);
             double Range = Math.Sqrt(dx * dx + dy * dy);
-
-            return (int)(Range / Point2D.Lerp(36.0, 13.5, Point2D.Clamp(Range, 900.0)));
+            Range = Range / Lerp(36.0, 13.50, Clamp(Range, 900));
+            return (int)(Range);
 		}
 
-        public static double Clamp(double value, double max)
+        public int GetRealDistance(IPoint2D point)
+        {
+            double dx = (double)(X - point.X);
+            double dy = (double)(Y - point.Y);
+            double Range = Math.Sqrt(dx * dx + dy * dy);
+            Range = Range / Lerp(36.0, 13.50, Clamp(Range, 900));
+            return (int)(Range);
+        }
+
+        static public double Clamp(double value, double max)
         {
             if (value > max)
                 value = max;
+
             return value / max;
         }
 
-        public static double Lerp(double value1, double value2, double amount)
+        static public double Lerp(double value1, double value2, double amount)
         {
             return value1 + (value2 - value1) * amount;
         }

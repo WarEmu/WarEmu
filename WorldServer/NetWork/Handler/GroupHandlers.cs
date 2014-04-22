@@ -10,8 +10,8 @@ namespace WorldServer
 {
     public class GtoupHandlers : IPacketHandler
     {
-        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_GROUP_COMMAND, "onGroupCommand")]
-        static public void F_MAIL(BaseClient client, PacketIn packet)
+        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_GROUP_COMMAND, (int)eClientState.WorldEnter, "onGroupCommand")]
+        static public void F_GROUP_COMMAND(BaseClient client, PacketIn packet)
         {
             GameClient cclient = client as GameClient;
 

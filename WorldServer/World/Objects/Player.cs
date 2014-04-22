@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
 using System.Text;
+using System.IO;
 
 using Common;
 using FrameWork;
@@ -17,39 +18,45 @@ namespace WorldServer
         static public int DISCONNECT_TIME = 20000;
 
         static public List<Player> _Players = new List<Player>();
+        static public uint OrderCount = 0;
+        static public uint DestruCount = 0;
+
         static public void AddPlayer(Player Plr)
         {
             lock (_Players)
+            {
                 if (!_Players.Contains(Plr))
                 {
                     _Players.Add(Plr);
                     if (Plr.Realm == GameData.Realms.REALMS_REALM_ORDER)
-                        ++Program.Rm.OrderCount;
+                        ++OrderCount;
                     else
-                        ++Program.Rm.DestructionCount;
+                        ++DestruCount;
 
                     Program.Rm.OnlinePlayers = (uint)_Players.Count;
-                    Program.AcctMgr.UpdateRealm(Program.Rm.RealmId, Program.Rm.OnlinePlayers, Program.Rm.OrderCount, Program.Rm.DestructionCount);
+                    Program.AcctMgr.UpdateRealm(Program.Rm.RealmId, Program.Rm.OnlinePlayers, OrderCount, DestruCount);
 
                     CharMgr.Database.ExecuteNonQuery("UPDATE characters_value SET Online=1 WHERE CharacterId=" + Plr._Info.CharacterId + ";");
                     Plr._Value.Online = true;
                 }
+            }
         }
         static public void RemovePlayer(Player Plr)
         {
             lock (_Players)
             {
-                _Players.Remove(Plr);
-                if (Plr._Info.Realm == (byte)GameData.Realms.REALMS_REALM_ORDER)
-                    --Program.Rm.OrderCount;
-                else
-                    --Program.Rm.DestructionCount;
+                if (_Players.Remove(Plr))
+                {
+                    if (Plr._Info.Realm == (byte)GameData.Realms.REALMS_REALM_ORDER)
+                        --OrderCount;
+                    else
+                        --DestruCount;
 
-                Program.Rm.OnlinePlayers = (uint)_Players.Count;
-                Program.AcctMgr.UpdateRealm(Program.Rm.RealmId, Program.Rm.OnlinePlayers, Program.Rm.OrderCount, Program.Rm.DestructionCount);
-
-                CharMgr.Database.ExecuteNonQuery("UPDATE characters_value SET Online=0 WHERE CharacterId=" + Plr._Info.CharacterId + ";");
-                Plr._Value.Online = false;
+                    CharMgr.Database.ExecuteNonQuery("UPDATE characters_value SET Online=0 WHERE CharacterId=" + Plr._Info.CharacterId + ";");
+                    Plr._Value.Online = false;
+                    Program.Rm.OnlinePlayers = (uint)_Players.Count;
+                    Program.AcctMgr.UpdateRealm(Program.Rm.RealmId, Program.Rm.OnlinePlayers, OrderCount, DestruCount);
+                }
             }
         }
         static public Player GetPlayer(string Name)
@@ -66,8 +73,6 @@ namespace WorldServer
         }
         static public Player CreatePlayer(GameClient Client, Character Char)
         {
-            Log.Success("Player", "CreatePlayer");
-
             GameClient Other = (Client.Server as TCPServer).GetClientByAccount(Client,Char.AccountId);
             if (Other != null)
                 Other.Disconnect();
@@ -83,8 +88,6 @@ namespace WorldServer
             {
                 Name = Name.ToLower();
                 GuildName = GuildName.ToLower();
-
-                Log.Success("GetPlayers", "N=" + Name + ",G=" + GuildName + ",C=" + Career + ",Z=" + ZoneId + ",Ml=" + MinLevel + ",MaL=" + MaxLevel);
 
                 foreach (Player Plr in _Players)
                 {
@@ -108,7 +111,6 @@ namespace WorldServer
         }
         static public void Stop()
         {
-            Log.Success("Player", "Stop");
             foreach (Player Plr in _Players)
                 Plr.Quit();
         }
@@ -151,25 +153,28 @@ namespace WorldServer
 
         public Player(GameClient Client,Character Info) : base()
         {
-            Log.Success("Player", "Construction de " + Info.Name);
-
             _Client = Client;
             _Info = Info;
             _Value = Info.Value;
 
             Name = Info.Name;
             Realm = (GameData.Realms)Info.Realm;
-            SetPvpFlag(false);
+            SetPVPFlag(false);
 
-            EvtInterface = EventInterface.GetEventInterface((uint)_Info.CharacterId);
-            SocInterface = new SocialInterface(this);
-            TokInterface = new TokInterface(this);
-            MlInterface = new MailInterface(this);
+            EvtInterface = AddInterface(EventInterface.GetEventInterface((uint)_Info.CharacterId)) as EventInterface;
+            SocInterface = AddInterface<SocialInterface>();
+            TokInterface = AddInterface<TokInterface>();
+            MlInterface = AddInterface<MailInterface>();
+            
+            EvtInterface.AddEventNotify(EventName.ON_MOVE, CancelQuit);
+            EvtInterface.AddEventNotify(EventName.ON_RECEIVE_DAMAGE, CancelQuit);
+            EvtInterface.AddEventNotify(EventName.ON_DEAL_DAMAGE, CancelQuit);
+            EvtInterface.AddEventNotify(EventName.ON_START_CASTING, CancelQuit);
         }
 
         ~Player()
         {
-            Log.Success("Player", "Destruction de " + Name);
+
         }
 
         public override void OnLoad()
@@ -178,14 +183,13 @@ namespace WorldServer
 
             if (!_Inited)
             {
-                EvtInterface.Obj = this;
-                EvtInterface.AddEventNotify("Playing", Save);
+                EvtInterface._Owner = this;
+                EvtInterface.AddEventNotify(EventName.PLAYING, Save);
                 EvtInterface.Start();
 
                 ItmInterface.Load(CharMgr.GetItemChar(_Info.CharacterId));
                 StsInterface.Load(CharMgr.GetCharacterInfoStats(_Info.CareerLine, _Value.Level));
                 QtsInterface.Load(this._Info.Quests);
-                QtsInterface.Load(this._Info.InProgressQuests);
                 TokInterface.Load(_Info.Toks);
                 SocInterface.Load(_Info.Socials);
                 MlInterface.Load(CharMgr.GetCharMail(_Info.CharacterId));
@@ -204,26 +208,41 @@ namespace WorldServer
         }
         public override void Dispose()
         {
-            RemovePlayer(this);
-
+            SendLeave();
             StopQuit();
 
-            EvtInterface.Notify("Leave", this, null);
-            SocInterface.Stop();
-
+            EvtInterface.Notify(EventName.LEAVE, this, null);
+            RemovePlayer(this);
             Save();
+            base.Dispose();
 
             if (_Client != null)
             {
                 _Client.Plr = null;
                 _Client.State = (int)eClientState.CharScreen;
+            }    
+        }
+
+        public void SendSniff(string Str)
+        {
+            string Result = "";
+            using (StringReader Reader = new StringReader(Str))
+            {
+                string Line;
+                while ((Line = Reader.ReadLine()) != null)
+                {
+                    Result+=Line.Substring(1, 48).Replace(" ", string.Empty);
+                }
             }
 
-            base.Dispose();
+            Result = Result.Remove(0, 4);
+            byte Opcode = Convert.ToByte(Result.Substring(0, 2), 16);
+            Result = Result.Remove(0, 2);
 
-            // This moved here so that the packet would be sent straight away
-            // instead of being added to _PacketOut list.
-            SendLeave();
+            PacketOut Out = new PacketOut(Opcode);
+            Out.WriteHexStringBytes(Result);
+            Out.WritePacketLength();
+            SendPacket(Out);
         }
 
         public void StartInit()
@@ -232,32 +251,59 @@ namespace WorldServer
             Client.State = (int)eClientState.WorldEnter;
             SendMoney();
             SendStats();
-            SendSpeed();
+            SendSpeed(Speed);
             SendInited();
             SendRankUpdate(this);
+            SendXpTable();
+            WorldMgr.GeneralScripts.OnWorldPlayerEvent("SEND_PACKAGES", this, null);
             SendXp();
             SendRenown();
             TokInterface.SendAllToks();
             SendSkills();
+
+            /*{
+                PacketOut Out = new PacketOut((byte)Opcodes.F_INFLUENCE_INFO);
+                Out.WriteHexStringBytes("00000000");
+                SendPacket(Out);
+            }
+            {
+                PacketOut Out = new PacketOut((byte)Opcodes.F_PLAY_TIME_STATS);
+                Out.WriteHexStringBytes("000000000000000000000000");
+                SendPacket(Out);
+            }
+
+            {
+                PacketOut Out = new PacketOut((byte)Opcodes.F_TACTICS);
+                Out.WriteHexStringBytes("0300");
+                SendPacket(Out);
+            }
+
+            {
+                PacketOut Out = new PacketOut((byte)Opcodes.F_MORALE_LIST);
+                Out.WriteHexStringBytes("00 00 00 00 00 00 00 00 00 00 00".Replace(" ", string.Empty));
+                SendPacket(Out);
+            }*/
+
             Health = TotalHealth;
             ItmInterface.SendAllItems(this);
             AbtInterface.SendAbilities();
             MlInterface.SendMailCounts();
 
-            PacketOut Out = new PacketOut((byte)Opcodes.F_CHARACTER_INFO);
-            Out.WriteByte(1);
-            Out.WriteByte(1);
-            Out.WriteUInt16(0x300);
-            Out.WriteUInt16(8159);
-            Out.WriteByte(1);
-            SendPacket(Out);
-
             QtsInterface.SendQuests();
+            MvtInterface.CurrentMount.SendMount(this);
 
             SendInitComplete();
             SocInterface.SendFriends();
+
+            if (GetGroup() != null)
+                GetGroup().Update();
+
+            SendMessage(0, "MOTD: Welcome to WarEmu", "", SystemData.ChatLogFilters.CHATLOGFILTERS_CITY_ANNOUNCE);
         }
-        public override void Update()
+
+        public long Next = 0;
+        public uint Id = 0;
+        public override void Update(long Tick)
         {
             if (Client == null)
             {
@@ -269,41 +315,34 @@ namespace WorldServer
                 if (Invitation.Expire <= TCPManager.GetTimeStamp())
                     Invitation.DeclineInvitation();
 
-            base.Update();
+            base.Update(Tick);
             UpdatePackets();
         }
 
-        #region Pvp
-
-        public void SetPvpFlag(bool Enabled)
+        public void SetPVPFlag(bool State)
         {
-            if (Enabled)
-            {
-                Faction = (byte)(Realm == GameData.Realms.REALMS_REALM_DESTRUCTION ? 72 : 68);
-            }
-            else
-            {
+            if(State == false)
                 Faction = (byte)(Realm == GameData.Realms.REALMS_REALM_DESTRUCTION ? 8 : 6);
-            }
+            else
+                Faction = (byte)(Realm == GameData.Realms.REALMS_REALM_DESTRUCTION ? 72 : 68);
 
-            if (IsInWorld() || _Loaded)
+            if (_IsActive && IsInWorld() && _Loaded)
             {
                 foreach (Player Plr in _PlayerRanged)
                 {
                     if (Plr.HasInRange(this))
-                    {
                         SendMeTo(Plr);
-                    }
                 }
             }
         }
-
-        #endregion
 
         #region Packets
 
         public List<PacketIn> _PacketIn = new List<PacketIn>(20);
         public List<PacketOut> _PacketOut = new List<PacketOut>(20);
+
+        public List<PacketIn> _InternalIn = new List<PacketIn>(20);
+        public List<PacketOut> _InternalOut = new List<PacketOut>(20);
 
         public void ReceivePacket(PacketIn Packet)
         {
@@ -330,45 +369,47 @@ namespace WorldServer
         public void SendCopy(PacketOut Out)
         {
             Out.WritePacketLength();
+            byte[] Buf = Out.ToArray();
             PacketOut packet = new PacketOut(0);
             packet.Position = 0;
-            packet.Write(Out.ToArray(), 0, Out.ToArray().Length);
+            packet.Write(Buf, 0, Buf.Length);
             SendPacket(packet);
             
         }
-        public PacketIn[] GetPacketIn(bool Clear)
+        public void GetPacketIn(bool Clear)
         {
+            _InternalIn.Clear();
+
             lock (_PacketIn)
             {
-                PacketIn[] Ins = _PacketIn.ToArray();
+                _InternalIn.AddRange(_PacketIn);
                 if (Clear) _PacketIn.Clear();
-                return Ins;
             }
         }
-        public PacketOut[] GetPacketOut(bool Clear)
+        public void GetPacketOut(bool Clear)
         {
+            _InternalOut.Clear();
+
             lock (_PacketOut)
             {
-                PacketOut[] Outs = _PacketOut.ToArray();
+                _InternalOut.AddRange(_PacketOut.ToArray());
                 if (Clear) _PacketOut.Clear();
-                return Outs;
             }
         }
         public void UpdatePackets()
         {
-            PacketIn[] Ins = GetPacketIn(true);
-            PacketOut[] Outs = GetPacketOut(true);
-
             if (_Client == null)
                 return;
 
-            for (int i = 0; i < Ins.Length; ++i)
-                if (Ins[i] != null)
-                    _Client.Server.HandlePacket(_Client, Ins[i]);
+            GetPacketIn(true);
+            int i;
+            for (i = 0; i < _InternalIn.Count; ++i)
+                _Client.Server.HandlePacket(_Client, _InternalIn[i]);
 
-            for (int i = 0; i < Outs.Length; ++i)
-                if (Outs[i] != null)
-                    _Client.SendPacket(Outs[i]);
+            GetPacketOut(true);
+            for (i = 0; i < _InternalOut.Count; ++i)
+                if (_InternalOut[i] != null)
+                    _Client.SendPacket(_InternalOut[i]);
         }
 
         #endregion
@@ -445,6 +486,9 @@ namespace WorldServer
             if (!GetPlayer().IsDead)
                 return;
 
+            EvtInterface.RemoveEvent(AutomaticRespawnPlayer);
+            EvtInterface.RemoveEvent(RespawnPlayer);
+
             Zone_Respawn Respawn = WorldMgr.GetZoneRespawn(Zone.ZoneId, (byte)Realm, this);
             if (Respawn != null)
                 SafePinTeleport(Respawn.PinX, Respawn.PinY, Respawn.PinZ, Respawn.WorldO);
@@ -454,12 +498,16 @@ namespace WorldServer
 
         public override void RezUnit()
         {
+            EvtInterface.RemoveEvent(RespawnPlayer);
             PacketOut Out = new PacketOut((byte)Opcodes.F_PLAYER_CLEAR_DEATH);
             Out.WriteUInt16(Oid);
             Out.WriteUInt16(0);
             DispatchPacket(Out,true);
 
             base.RezUnit();
+
+            foreach (Player Plr in _PlayerRanged)
+                SendMeTo(Plr);
         }
 
         #endregion
@@ -467,14 +515,15 @@ namespace WorldServer
         #region Xp
 
         private Xp_Info CurrentXp = null;
-        public void SetLevel(byte Level)
+        public void SetLevel(byte NewLevel)
         {
-            CurrentXp = WorldMgr.GetXp_Info(Level);
-            _Value.Level = Level;
+            CurrentXp = WorldMgr.GetXp_Info(NewLevel);
+            _Value.Level = NewLevel;
+            Dictionary<byte, UInt16> Values = ApplyLevel();
 
-            if (_Loaded)
+            if (_Loaded && _Inited)
             {
-                SendLevelUp(ApplyLevel());
+                SendLevelUp(Values);
                 SendXp();
             }
 
@@ -500,8 +549,8 @@ namespace WorldServer
         public void LevelUp(uint RestXp)
         {
             _Value.Xp = 0;
-            SetLevel((byte)(_Value.Level + 1));
-
+            SetLevel((byte)(Level + 1));
+            EvtInterface.Notify(EventName.ON_LEVEL_UP, this, null);
             if (CurrentXp == null)
                 return;
 
@@ -511,8 +560,8 @@ namespace WorldServer
         {
             Dictionary<byte, UInt16> Diff = new Dictionary<byte, ushort>();
 
-            CharacterInfo_stats[] NewStats = CharMgr.GetCharacterInfoStats(_Info.CareerLine, _Value.Level);
-            if (NewStats == null || NewStats.Length <= 0)
+            List<CharacterInfo_stats> NewStats = CharMgr.GetCharacterInfoStats(_Info.CareerLine, _Value.Level);
+            if (NewStats == null || NewStats.Count <= 0)
                 return Diff;
 
             foreach (CharacterInfo_stats Stat in NewStats)
@@ -539,7 +588,7 @@ namespace WorldServer
             CurrentRenown = WorldMgr.GetRenown_Info(Level);
             _Value.RenownRank = Level;
 
-            if(_Loaded)
+            if (_Loaded && _Inited)
                 SendRenown();
         }
         public void AddRenown(uint Renown)
@@ -566,10 +615,10 @@ namespace WorldServer
 
         #region Senders
 
-        public void SendSpeed()
+        public void SendSpeed(UInt16 NewSpeed)
         {
             PacketOut Out = new PacketOut((byte)Opcodes.F_MAX_VELOCITY);
-            Out.WriteUInt16(Speed);
+            Out.WriteUInt16(NewSpeed);
             Out.WriteByte(1);
             Out.WriteByte(100);
             SendPacket(Out);
@@ -635,6 +684,101 @@ namespace WorldServer
             SendPacket(Out);
 
         }
+        public void SendXpTable()
+        {
+            PacketOut Out = new PacketOut((byte)Opcodes.F_EXPERIENCE_TABLE);
+            Out.WritePacketString(@"|1C 00 00 00 0A 96 00 00 00 18 C4 00 00 |................|
+|00 28 F0 00 00 00 39 EE 00 00 00 4F B0 00 00 00 |.(....9....O....|
+|65 FE 00 00 00 82 32 00 00 00 9E C0 00 00 00 BE |e.....2.........|
+|96 00 00 00 E2 04 03 00 00 00 00 00 00 01 05 0E |................|
+|00 00 01 30 24 03 00 00 00 00 00 00 01 5A CC 00 |...0$........Z..|
+|00 01 89 84 03 00 00 00 00 00 00 01 BC 88 00 00 |................|
+|01 EE 74 03 00 00 00 00 00 00 02 29 CA 00 00 02 |..t........)....|
+|63 90 03 00 00 00 00 00 00 02 A0 BC 04 00 00 00 |c...............|
+|00 00 00 02 D2 6C 03 00 00 00 00 00 00 03 09 62 |.....l.........b|
+|03 00 00 00 00 00 00 03 51 2E 03 00 00 00 00 00 |........Q.......|
+|00 03 9F 80 03 00 00 00 00 00 00 03 EC 38 03 00 |.............8..|
+|00 00 00 00 00 04 3E 04 03 00 00 00 00 00 00 04 |......>.........|
+|88 64 03 00 00 00 00 00 00 04 FA 1A 03 00 00 00 |.d..............|
+|00 00 00 05 9A 24 03 00 00 00 00 00 00 06 44 24 |.....$........D$|
+|03 00 00 00 00 04 00 00 00 00 00 00 06 FC 2A 03 |..............*.|
+|00 00 00 00 00 00 07 CE C0 03 00 00 00 00 00 00 |................|
+|08 A1 9C 03 00 00 00 00 00 00 09 7F E0 03 00 00 |................|
+|00 00 00 00 0A B3 42 03 00 00 00 00 00 00 0B 6E |......B........n|
+|A4 03 00 00 00 00 00 00 0C 2E 02 03 00 00 00 00 |................|
+|00 00 0D 00 FC 03 00 00 00 00 00 00 0D CC 8A 03 |................|
+|00 00 00 00 00 00 0E A1 96 03 00 00 00 00 04 00 |................|
+|00 00 00 05 00 00 00 0A 06 00 00 00 00 05 00 00 |................|
+|00 50 06 00 00 00 00 05 00 00 00 E6 06 00 00 00 |.P..............|
+|00 05 00 00 01 B8 06 00 00 00 00 05 00 00 02 DA |................|
+|06 00 00 00 00 05 00 00 04 38 06 00 00 00 00 05 |.........8......|
+|00 00 05 DC 06 00 00 00 00 05 00 00 07 D0 06 00 |................|
+|00 00 00 05 00 00 0A 00 06 00 00 00 00 05 00 00 |................|
+|0C 76 06 00 00 00 00 04 00 00 00 00 05 00 00 0F |.v..............|
+|32 06 00 00 00 00 05 00 00 12 2A 06 00 00 00 00 |2.........*.....|
+|05 00 00 15 72 06 00 00 00 00 05 00 00 18 F6 06 |....r...........|
+|00 00 00 00 05 00 00 1C B6 06 00 00 00 00 05 00 |................|
+|00 20 BC 06 00 00 00 00 05 00 00 25 08 06 00 00 |. .........%....|
+|00 00 05 00 00 29 90 06 00 00 00 00 05 00 00 2E |.....)..........|
+|54 06 00 00 00 00 05 00 00 33 5E 06 00 00 00 00 |T........3^.....|
+|04 00 00 00 00 05 00 00 38 A4 06 00 00 00 00 05 |........8.......|
+|00 00 3E 30 06 00 00 00 00 05 00 00 43 EE 06 00 |..>0........C...|
+|00 00 00 05 00 00 49 F2 06 00 00 00 00 05 00 00 |......I.........|
+|50 32 06 00 00 00 00 05 00 00 56 AE 06 00 00 00 |P2........V.....|
+|00 05 00 00 5D 66 06 00 00 00 00 05 00 00 64 64 |....]f........dd|
+|06 00 00 00 00 05 00 00 6B 94 06 00 00 00 00 05 |........k.......|
+|00 00 73 00 06 00 00 00 00 04 00 00 00 00 05 00 |..s.............|
+|00 7A A8 06 00 00 00 00 05 00 00 82 8C 06 00 00 |.z..............|
+|00 00 05 00 00 8A A2 06 00 00 00 00 05 00 00 92 |................|
+|FE 06 00 00 00 00 05 00 00 9B 8C 06 00 00 00 00 |................|
+|05 00 00 A4 4C 06 00 00 00 00 05 00 00 AD 52 06 |....L.........R.|
+|00 00 00 00 05 00 00 B6 8A 06 00 00 00 00 05 00 |................|
+|00 BF F4 06 00 00 00 00 05 00 00 C9 9A 06 00 00 |................|
+|00 00 03 00 00 00 00 05 00 00 D3 72 06 00 00 00 |...........r....|
+|00 05 00 00 DD 86 06 00 00 00 00 05 00 00 E7 CC |................|
+|06 00 00 00 00 05 00 00 F2 44 06 00 00 00 00 05 |.........D......|
+|00 00 FC F8 06 00 00 00 00 04 00 00 00 00 05 00 |................|
+|01 07 D4 06 00 00 00 00 05 00 01 12 EC 06 00 00 |................|
+|00 00 05 00 01 1E 36 06 00 00 00 00 05 00 01 29 |......6........)|
+|BC 06 00 00 00 00 05 00 01 35 6A 06 00 00 00 00 |.........5j.....|
+|03 00 00 00 00 05 00 01 41 4A 06 00 00 00 00 05 |........AJ......|
+|00 01 4E CE 06 00 00 00 00 05 00 01 5E 1E 06 00 |..N.........^...|
+|00 00 00 05 00 01 6F 4E 06 00 00 00 00 05 00 01 |......oN........|
+|82 90 06 00 00 00 00 05 00 01 98 16 06 00 00 00 |................|
+|00 05 00 01 B0 12 06 00 00 00 00 05 00 01 CA AC |................|
+|06 00 00 00 00 05 00 01 E8 20 06 00 00 00 00 05 |......... ......|
+|00 02 08 A0 06 00 00 00 00 03 00 00 00 00 05 00 |................|
+|02 2C 68 06 00 00 00 00 05 00 02 53 A0 06 00 00 |.,h........S....|
+|00 00 05 00 02 7E 84 06 00 00 00 00 05 00 02 AD |.....~..........|
+|5A 06 00 00 00 00 05 00 02 E0 54 06 00 00 00 00 |Z.........T.....|
+|04 00 00 00 00 05 00 03 17 C2 06 00 00 00 00 05 |................|
+|00 03 53 CC 06 00 00 00 00 05 00 03 94 B8 06 00 |..S.............|
+|00 00 00 05 00 03 DA D6 06 00 00 00 00 05 00 04 |................|
+|26 62 06 00 00 00 00 03 00 00 00 00 05 00 04 77 |&b.............w|
+|A2 06 00 00 00 00 05 00 04 CE DC 06 00 00 00 00 |................|
+|05 00 05 2C 56 06 00 00 00 00 05 00 05 90 6A 06 |...,V.........j.|
+|00 00 00 00 05 00 05 FB 54 06 00 00 00 00 04 00 |........T.......|
+|00 00 00 05 00 06 6D 6E 06 00 00 00 00 05 00 06 |......mn........|
+|E6 FE 06 00 00 00 00 05 00 07 68 54 06 00 00 00 |..........hT....|
+|00 05 00 07 F1 CA 06 00 00 00 00 05 00 08 83 BA |................|
+|06 00 00 00 00 04 00 00 00 00 05 00 0A 47 3D 06 |.............G=.|
+|00 00 00 00 05 00 0A D4 41 06 00 00 00 00 05 00 |........A.......|
+|0B 61 43 06 00 00 00 00 05 00 0B EE 46 06 00 00 |.aC.........F...|
+|00 00 04 00 00 00 00 05 00 0C 7B 48 06 00 00 00 |..........{H....|
+|00 05 00 0D 08 4A 06 00 00 00 00 05 00 0D 95 4C |.....J.........L|
+|06 00 00 00 00 05 00 0E 22 4F 06 00 00 00 00 04 |........O......|
+|00 00 00 00 05 00 0E AF 51 06 00 00 00 00 05 00 |........Q.......|
+|0F 3C 53 06 00 00 00 00 05 00 0F C9 55 06 00 00 |.<S.........U...|
+|00 00 05 00 10 56 58 06 00 00 00 00 04 00 00 00 |.....VX.........|
+|00 05 00 10 E3 5A 06 00 00 00 00 05 00 11 70 5C |.....Z........p\|
+|06 00 00 00 00 05 00 11 FD 5F 06 00 00 00 00 05 |........._......|
+|00 12 8A 61 06 00 00 00 00 04 00 00 00 00 05 00 |...a............|
+|13 17 63 06 00 00 00 00 05 00 13 A4 65 06 00 00 |..c.........e...|
+|00 00 05 00 14 31 68 06 00 00 00 00 05 00 14 BE |.....1h.........|
+|6A 06 00 00 00 00 04 00 00 00 00 00 00 00 00 00 |j...............|
+|00                                              |.               |");
+            SendPacket(Out);
+        }
         public void SendXp()
         {
             PacketOut Out = new PacketOut((byte)Opcodes.F_PLAYER_EXPERIENCE);
@@ -644,6 +788,32 @@ namespace WorldServer
             Out.WriteByte(_Value.Level);
             Out.Fill(0, 3);
             SendPacket(Out);
+        }
+        public void SendLevelUp(Dictionary<byte, UInt16> Diff)
+        {
+            SendRankUpdate(null);
+
+            PacketOut Out = new PacketOut((byte)Opcodes.F_PLAYER_LEVEL_UP);
+            Out.WriteUInt32(0);
+            Out.WriteByte((byte)Diff.Count);
+            foreach (KeyValuePair<byte, UInt16> Stat in Diff)
+            {
+                Out.WriteByte(Stat.Key);
+                Out.WriteUInt16(Stat.Value);
+            }
+            SendPacket(Out);
+        }
+        public void SendRankUpdate(Player Plr)
+        {
+            PacketOut Out = new PacketOut((byte)Opcodes.F_PLAYER_RANK_UPDATE);
+            Out.WriteByte((byte)Level);
+            Out.WriteByte(0x20);
+            Out.WriteUInt16(Oid);
+
+            if (Plr == null)
+                DispatchPacket(Out, true);
+            else
+                Plr.SendPacket(Out);
         }
         public void SendRenown()
         {
@@ -697,67 +867,95 @@ namespace WorldServer
         {
             PacketOut Out = new PacketOut((byte)Opcodes.F_PLAYER_QUIT);
             Out.WriteByte(0);
-            Out.WriteByte(CloseClient ? (byte)0 : (byte)1);
+            Out.WriteByte((byte)(CloseClient ? 0 : 1)); // 1 = Page de sélection des perso, 0 = Exit
             SendPacket(Out);
         }
-        public void SendLevelUp(Dictionary<byte, UInt16> Diff)
-        {
-            SendRankUpdate(null);
 
-            PacketOut Out = new PacketOut((byte)Opcodes.F_PLAYER_LEVEL_UP);
+        public void SendHelpMessage(Player Plr, string Text)
+        {
+            /*|00 3D 06 00 00 23 00 00 00 00 0D 57 68 69 69 74 |.=...#.....Whiit|
+|65 63 68 65 72 72 79 00 00 25 4C 46 20 74 61 6E |echerry..%LF tan|
+|6B 20 61 6E 64 20 68 65 61 6C 65 72 20 66 6F 72 |k and healer for|
+|20 73 63 2F 6F 72 76 72 20 67 72 6F 75 70 00 00 | sc/orvr group..|      */
+
+            PacketOut Out = new PacketOut((byte)Opcodes.F_CHAT);
+            Out.WriteUInt16(Plr.Oid);
+            Out.WriteByte(0x23);
             Out.WriteUInt32(0);
-            Out.WriteByte((byte)Diff.Count);
-            foreach (KeyValuePair<byte, UInt16> Stat in Diff)
-            {
-                Out.WriteByte(Stat.Key);
-                Out.WriteUInt16(Stat.Value);
-            }
+            Out.WriteStringToZero(Plr.Name);
+            Out.WriteUInt16((ushort)(Text.Length + 1));
+            Out.WriteStringBytes(Text);
+            Out.WriteByte(0);
+            Out.WriteByte(0);
             SendPacket(Out);
-        }
-        public void SendRankUpdate(Player Plr)
-        {
-            PacketOut Out = new PacketOut((byte)Opcodes.F_PLAYER_RANK_UPDATE);
-            Out.WriteByte((byte)(Level));
-            Out.WriteByte(0x20);
-            Out.WriteUInt16(Oid);
-            if (Plr == null)
-                DispatchPacket(Out,true);
-            else
-                Plr.SendPacket(Out);
-
         }
         public void SendMessage(UInt16 Oid, string NameSender, string Text, SystemData.ChatLogFilters Filter)
         {
-            if (Text.IndexOf("<LINK") >= 0 && Text.IndexOf("ITEM:") > 0)
-            {
-                int Pos = Text.IndexOf("ITEM:")+5;
-                int LastPos = Text.IndexOf(" ",Pos)-1;
-                string Value = Text.Substring(Pos, LastPos-Pos);
-                uint ItemId = uint.Parse(Value);
-                Item_Info Info = WorldMgr.GetItem_Info(ItemId);
-                if (Info != null)
-                {
-
-                }
-            }
-
             PacketOut Out = new PacketOut((byte)Opcodes.F_CHAT);
             Out.WriteUInt16(Oid);
             Out.WriteByte((byte)Filter);
             Out.Fill(0, 4);
             Out.WritePascalString(NameSender);
+            Out.WriteUInt16((ushort)(Text.Length + 1));
+            Out.WriteStringBytes(Text);
             Out.WriteByte(0);
-            Out.WritePascalString(Text);
-            Out.WriteByte(0);
-            SendPacket(Out);
+
+            int a = Text.IndexOf("<LINK");
+            int b = Text.IndexOf("ITEM:");
+            if (a >= 0 && b > 0)
+            {
+                Out.WriteByte(1);
+                long p = Out.Position;
+                Out.WriteByte(0);
+
+                int Count = 0;
+                while (a >= 0 && b >= 0)
+                {
+                    int Pos = b + 5;
+                    int LastPos = Text.IndexOf(" ", Pos) - 1;
+                    string Value = Text.Substring(Pos, LastPos - Pos);
+                    uint ItemId = uint.Parse(Value);
+                    Item_Info Info = WorldMgr.GetItem_Info(ItemId);
+                    if (Info != null)
+                    {
+                        ++Count;
+                        Out.WriteByte(3);
+                        Item.BuildItem(ref Out, null, Info, 0, 1);
+                    }
+
+                    a = Text.IndexOf("<LINK", Pos);
+                    b = Text.IndexOf("ITEM:", Pos);
+                }
+
+                SendPacket(Out);
+            }
         }
         public void SendMessage(Object Sender, string Text,SystemData.ChatLogFilters Filter)
         {
             SendMessage(Sender != null ? Sender.Oid : (UInt16)0, Sender != null ? Sender.Name : "", Text, Filter);
         }
+        public void SendObjectiveText(string Text)
+        {
+            PacketOut Out = new PacketOut((byte)Opcodes.F_OBJECTIVE_INFO);
+            Out.WriteUInt32(0); // Entry
+            Out.WriteByte(0); // 1
+            Out.WriteByte(1); // 2
+            Out.WriteByte(0); // 1
+            Out.WriteUInt16(0);
+            Out.WriteStringToZero(Text);
+            Out.WriteUInt16(0);
+            Out.WriteUInt16(0); // Time
+            Out.WriteUInt16(0);
+            Out.WriteByte(0);
+            SendPacket(Out);
+        }
         public override void SendMeTo(Player Plr)
         {
-            Log.Success("SendMeTo", "[" + Plr.Name + "] voit : " + Name);
+            if (Plr == null || Plr.IsDisposed || Plr.Client == null)
+                return;
+ 
+            if (IsDisposed || Client == null)
+                return;
 
             PacketOut Out = new PacketOut((byte)Opcodes.F_CREATE_PLAYER);
             Out.WriteUInt16((UInt16)_Client.Id);
@@ -771,13 +969,13 @@ namespace WorldServer
             Out.WriteUInt16((UInt16)Y);
             Out.WriteUInt16(Heading);
 
-            Out.WriteByte(_Value.Level); // Level
             Out.WriteByte(0); // Level
+            Out.WriteByte(_Value.Level); // Level
 
+            Out.WriteByte(0x2B);
+            Out.WriteByte((byte)(Faction + (IsDead ? 1 : 0))); // Faction
             Out.WriteByte(0);
-            Out.WriteByte(Faction);
-            Out.WriteByte(0);
-            Out.WriteByte(Faction);
+            Out.WriteByte(0); // ?
 
             Out.Write(_Info.bTraits, 0, _Info.bTraits.Length);
             Out.Fill(0, 12);
@@ -794,7 +992,6 @@ namespace WorldServer
             Out.Fill(0, 4);
 
             Plr.SendPacket(Out);
-
             base.SendMeTo(Plr);
         }
         public void SendSwitchRegion(UInt16 ZoneID)
@@ -813,60 +1010,95 @@ namespace WorldServer
         #region Quit
 
         public int  DisconnectTime= DISCONNECT_TIME; // 20 Secondes = 20000
+        public bool CloseClient = false;
         public bool Leaving = false;
-        public bool CloseClient;
-        public void StopQuit()
+        public bool StopQuit()
         {
-            EvtInterface.RemoveEvent(Quit);
-            DisconnectTime = DISCONNECT_TIME;
-            Leaving = false;
+            if (Leaving)
+            {
+                EvtInterface.RemoveEvent(Quit);
+                DisconnectTime = DISCONNECT_TIME;
+                Leaving = false;
+                return true;
+            }
+
+            return false;
         }
-        public bool MovingStopQuit(Object Sender, EventArgs Args)
+        public bool CancelQuit(Object Sender, object Args)
         {
-            SendLocalizeString("", GameData.Localized_text.TEXT_CANCELLED_LOGOUT);
-            StopQuit();
-            return true;
+            if(StopQuit())
+                SendLocalizeString("", GameData.Localized_text.TEXT_CANCELLED_LOGOUT);
+
+            return false;
         }
+
         public void Quit()
         {
             Quit(false);
         }
         public void Quit(bool CloseClient)
         {
-            Log.Success("Player", "Quit");
-
-            Leaving = true;
-
-            if (IsMoving)
+            try
             {
-                SendLocalizeString("", GameData.Localized_text.TEXT_MUST_NOT_MOVE_TO_QUIT);
-                return;
-            }
+                if (IsMoving)
+                {
+                    SendLocalizeString("", GameData.Localized_text.TEXT_MUST_NOT_MOVE_TO_QUIT);
+                    return;
+                }
 
-            if (DisconnectTime >= DISCONNECT_TIME)
+                if (CbtInterface.IsFighting())
+                {
+                    SendLocalizeString("", GameData.Localized_text.TEXT_CANT_QUIT_IN_COMBAT);
+                    return;
+                }
+
+                if (AbtInterface.IsCasting())
+                {
+                    SendLocalizeString("", GameData.Localized_text.TEXT_CANT_QUIT_YOURE_CASTING);
+                    return;
+                }
+
+                if (IsDead)
+                {
+                    SendLocalizeString("", GameData.Localized_text.TEXT_CANT_QUIT_YOURE_DEAD);
+                    return;
+                }
+
+                if (DisconnectTime >= DISCONNECT_TIME)
+                {
+                    EvtInterface.AddEvent(Quit, 5000, 5);
+                }
+
+                Leaving = true;
+
+                SendLocalizeString("" + DisconnectTime / 1000, GameData.Localized_text.TEXT_YOU_WILL_LOG_OUT_IN_X_SECONDS);
+                DisconnectTime -= 5000;
+                this.CloseClient = CloseClient;
+
+                if (!IsDisposed && ( DisconnectTime < 0 || GmLevel >= 1)) // Leave
+                    Dispose();
+            }
+            catch(Exception e)
             {
-                EvtInterface.AddEvent(Quit, 5000, 5);
-                EvtInterface.AddEventNotify("Moving", MovingStopQuit);
+                Log.Error("Quit", e.ToString());
             }
-
-            SendLocalizeString("" + DisconnectTime / 1000, GameData.Localized_text.TEXT_YOU_WILL_LOG_OUT_IN_X_SECONDS);
-            DisconnectTime -= 5000;
-            this.CloseClient = CloseClient;
-
-            if (DisconnectTime < 0 || GmLevel >= 1) // Leave
-                Dispose();
         }
 
-        public bool Save(Object Sender, EventArgs Args)
+        public bool Save(Object Sender, object Args)
         {
             EvtInterface.AddEvent(Save, 20000, 0);
             return true; // True, doit être delete après lancement
         }
-        public void Save()
+        public override void Save()
         {
-            ItmInterface.Save();
             CalcWorldPositions();
             CharMgr.Database.SaveObject(_Value);
+
+            if (_Info.Influences != null)
+                foreach (Characters_influence Obj in _Info.Influences)
+                    CharMgr.Database.SaveObject(Obj);
+
+            base.Save();
         }
 
         #endregion
@@ -875,14 +1107,15 @@ namespace WorldServer
 
         public int LastCX,LastCY = 0;
         public int LastX, LastY = 0;
+        public MapPiece CurrentPiece;
 
-        public override bool SetPosition(ushort PinX, ushort PinY, ushort PinZ, ushort Head)
+        public override bool SetPosition(ushort PinX, ushort PinY, ushort PinZ, ushort Head, bool SendState=false)
         {
             if (_Client.State != (int)eClientState.Playing)
             {
                 _Client.State = (int)eClientState.Playing;
                 AddPlayer(this);
-                EvtInterface.Notify("Playing", this, null);
+                EvtInterface.Notify(EventName.PLAYING, this, null);
             }
 
             bool Updated = base.SetPosition(PinX, PinY, PinZ, Head);
@@ -909,8 +1142,6 @@ namespace WorldServer
             if (WorldX == 0 || WorldY == 0)
                 return;
 
-            Log.Info("SafeWorldTeleport", "WorldX=" + WorldX + ",WorldY=" + WorldY);
-
             PacketOut Out = new PacketOut((byte)Opcodes.F_PLAYER_JUMP);
             Out.WriteUInt32(WorldX);
             Out.WriteUInt32(WorldY);
@@ -923,6 +1154,7 @@ namespace WorldServer
 
             X = Zone.CalculPin(WorldX, true);
             Y = Zone.CalculPin(WorldY, true);
+            SetPosition((ushort)X, (ushort)Y, WorldZ, WorldO, false);
         }
 
         public void Teleport(UInt16 ZoneID, UInt32 WorldX, UInt32 WorldY, UInt16 WorldZ, UInt16 WorldO)
@@ -967,6 +1199,25 @@ namespace WorldServer
             }
         }
 
+        public override void OnRangeUpdate()
+        {
+            if (CurrentPiece == null || !CurrentPiece.IsOn((ushort)(X / 64), (ushort)(Y / 64), Zone.ZoneId))
+            {
+                CurrentPiece = Zone.ClientInfo.GetWorldPiece((ushort)X, (ushort)Y, Zone.ZoneId);
+                if (CurrentPiece != null)
+                {
+                    if (Realm == GameData.Realms.REALMS_REALM_DESTRUCTION && CurrentPiece.DestruArea != null)
+                        TokInterface.AddTok(CurrentPiece.DestruArea.TokExploreEntry);
+
+                    if (Realm == GameData.Realms.REALMS_REALM_ORDER && CurrentPiece.OrderArea != null)
+                        TokInterface.AddTok(CurrentPiece.OrderArea.TokExploreEntry);
+
+                    if (CurrentPiece.IsPvp((byte)Realm))
+                        CbtInterface.EnablePvp();
+                }
+            }
+        }
+
         #endregion
 
         #region Info
@@ -975,7 +1226,7 @@ namespace WorldServer
         {
             string Info="";
 
-            Info += "Name=" + Name + ",Ip=" + (Client != null ? Client.GetIp : "Disconnected");
+            Info += "Name=" + Name + ",Ip=" + (Client != null ? Client.GetIp : "Disconnected") + base.ToString();
 
             return Info;
         }

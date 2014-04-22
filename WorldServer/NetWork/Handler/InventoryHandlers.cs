@@ -11,7 +11,7 @@ namespace WorldServer
 {
     public class InventoryHandlers : IPacketHandler
     {
-        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_BAG_INFO, "onBagInfo")]
+        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_BAG_INFO, (int)eClientState.Playing, "onBagInfo")]
         static public void F_BAG_INFO(BaseClient client, PacketIn packet)
         {
             GameClient cclient = client as GameClient;
@@ -26,7 +26,7 @@ namespace WorldServer
             switch (Type)
             {
                 case 3: // Toggle Pvp
-                    Plr.CbtInterface.TogglePvp();
+                    Plr.CbtInterface.TurnPvp();
                     break;
 
                 case 16: // Buy more bag space
@@ -46,7 +46,7 @@ namespace WorldServer
             }
         }
 
-        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_TRANSFER_ITEM, "onTransferItem")]
+        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_TRANSFER_ITEM, (int)eClientState.Playing, "onTransferItem")]
         static public void F_TRANSFER_ITEM(BaseClient client, PacketIn packet)
         {
             GameClient cclient = client as GameClient;
@@ -62,7 +62,7 @@ namespace WorldServer
             cclient.Plr.ItmInterface.MoveSlot(From, To, Count);
         }
 
-        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_TRADE_STATUS, "onTradeStatus")]
+        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_TRADE_STATUS, (int)eClientState.Playing, "onTradeStatus")]
         static public void F_TRADE_STATUS(BaseClient client, PacketIn packet)
         {
             GameClient cclient = client as GameClient;

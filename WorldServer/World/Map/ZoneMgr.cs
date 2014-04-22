@@ -14,6 +14,7 @@ namespace WorldServer
     {
         public UInt16 ZoneId;
         public Zone_Info Info;
+        public ClientZoneInfo ClientInfo;
         public RegionMgr Region;
         public bool Running;
 
@@ -23,6 +24,7 @@ namespace WorldServer
             this.ZoneId = Info.ZoneId;
             this.Info = Info;
             this.Running = true;
+            this.ClientInfo = ClientFileMgr.GetZoneInfo(Info.ZoneId);
         }
         public void Stop()
         {
@@ -53,14 +55,13 @@ namespace WorldServer
                 return;
             }
 
-
             if (Obj.Zone != null && Obj.Zone != this)
                 Obj.Zone.RemoveObject(Obj);
 
+            Obj.Zone = this;
+
             lock (_Objects)
             {
-                Obj.Zone = this;
-
                 _Objects.Add(Obj);
 
                 if (Obj.IsPlayer())
@@ -71,29 +72,55 @@ namespace WorldServer
         }
         public void RemoveObject(Object Obj)
         {
-            lock (_Objects)
+            if (Obj._ZoneMgr == this)
             {
-                _Objects.Remove(Obj);
-                if (Obj.IsPlayer())
-                    _Players.Remove(Obj.GetPlayer());
-            }
+                lock (_Objects)
+                {
+                    _Objects.Remove(Obj);
+                    if (Obj.IsPlayer())
+                        _Players.Remove(Obj.GetPlayer());
+                }
 
-            Obj._ZoneMgr = null;
+                Obj._ZoneMgr = null;
+            }
         }
-        public bool Run()
+        public bool Run(long Tick)
         {
             if (!Running)
                 return false;
 
+            int i = 0;
             lock (_Objects)
             {
-                for (int i = 0; i < _Objects.Count; ++i)
+                UpdateAnnounces(Tick);
+                Object Obj;
+                for (; i < _Objects.Count; ++i)
                 {
-                        if (_Objects[i] != null && _Objects[i].Zone == this)
-                            if (!_Objects[i].IsLoad())
-                                _Objects[i].Load();
+                    Obj = _Objects[i];
+                    if (Obj != null && Obj.Zone == this)
+                    {
+                        try
+                        {
+                            if (!Obj.IsLoad())
+                            {
+                                Obj.Load();
+                            }
                             else
-                                _Objects[i].Update();
+                            {
+                                if (Obj.IsDisposed)
+                                    Region.RemoveObject(Obj);
+                                else
+                                    Obj.Update(Tick);
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            Log.Error("Zone", e.ToString());
+
+                            if(!Obj.IsPlayer())
+                                RemoveObject(Obj);
+                        }
+                    }
                 }
             }
 
@@ -163,6 +190,38 @@ namespace WorldServer
 
         #endregion
 
+        #region Announces
+
+        public int CurrentAnnounce = 0;
+        public long NextAnnounce = 0;
+
+        public void UpdateAnnounces(long Tick)
+        {
+            if (NextAnnounce <= Tick)
+            {
+                TimedAnnounce Announce = WorldMgr.GetNextAnnounce(ref CurrentAnnounce, ZoneId);
+                if (Announce == null)
+                    NextAnnounce = Tick + 30000;
+                else
+                {
+                    foreach (Player Plr in _Players)
+                    {
+                        if (Plr == null)
+                            continue;
+
+                        if (Announce.Realm == 0 || (byte)Plr.Realm == Announce.Realm)
+                        {
+                            Plr.SendMessage(0, Announce.SenderName, Announce.Message, (SystemData.ChatLogFilters)Announce.Type);
+                        }
+                    }
+
+                    NextAnnounce = Tick + Announce.NextTime;
+                }
+            }
+        }
+
+        #endregion
+
         #region Statics
 
         static public UInt16 CalculPin(Zone_Info Info, int WorldPos, bool x)
@@ -185,11 +244,25 @@ namespace WorldServer
 
             WorldPosition.X = (int)((int)XZone + ((int)((int)x) & 0x00000FFF));
             WorldPosition.Y = (int)((int)YZone + ((int)((int)y) & 0x00000FFF));
-            WorldPosition.Z = Z / 2;
-            if (ZoneID == 161)
-                WorldPosition.Z = (32768 + Z) / 2;
+            WorldPosition.Z = Z;
 
             return WorldPosition;
+        }
+
+        static public void CalculWorldPosition(UInt16 ZoneID, ushort PinX, ushort PinY, ushort PinZ, ref int WorldX, ref int WorldY, ref int WorldZ)
+        {
+            Zone_Info Info = WorldMgr.GetZone_Info(ZoneID);
+            if (Info == null)
+                return;
+
+            int x = PinX > 32768 ? PinX - 32768 : PinX;
+            int y = PinY > 32768 ? PinY - 32768 : PinY;
+
+            WorldX = (int)((int)CalcOffset(Info, PinX, true) + ((int)((int)x) & 0x00000FFF));
+            WorldY = (int)((int)CalcOffset(Info, PinY, false) + ((int)((int)y) & 0x00000FFF));
+            WorldZ = PinZ;
+            if (Info.ZoneId == 161)
+                WorldZ += 16384;
         }
 
         static public Point3D CalculWorldPosition(Zone_Info Info, UInt16 PinX, UInt16 PinY, UInt16 PinZ)
@@ -201,9 +274,9 @@ namespace WorldServer
 
             WorldPosition.X = (int)((int)CalcOffset(Info,PinX,true) + ((int)((int)x) & 0x00000FFF));
             WorldPosition.Y = (int)((int)CalcOffset(Info, PinY, false) + ((int)((int)y) & 0x00000FFF));
-            WorldPosition.Z = PinZ / 2;
+            WorldPosition.Z = PinZ;
             if (Info.ZoneId == 161)
-                WorldPosition.Z = (32768 + PinZ) / 2;
+                WorldPosition.Z += 16384;
 
             return WorldPosition;
         }

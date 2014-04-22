@@ -13,7 +13,10 @@ namespace WorldServer
     {
         static public int RANGE_UPDATE_INTERVAL = 300; // Check des Ranged toutes les 300Ms
 
+        public List<BaseInterface> Interfaces = new List<BaseInterface>();
+
         public EventInterface EvtInterface;
+        public ScriptsInterface ScrInterface;
 
         public UInt16 _ObjectId;
         public UInt16 Oid 
@@ -36,24 +39,33 @@ namespace WorldServer
 
         public Object()
         {
-            if (!IsPlayer())
-                EvtInterface = new EventInterface(this);
+            if(EvtInterface == null && !IsPlayer())
+                EvtInterface = AddInterface<EventInterface>();
+
+            ScrInterface = AddInterface<ScriptsInterface>();
+
+            IsActive = false;
         }
 
         private bool _Disposed = false;
         public bool IsDisposed { get { return _Disposed; } }
         public virtual void Dispose()
         {
-            EvtInterface.Stop();
+            if (!_Disposed)
+            {
+                for (int i = 0; i < Interfaces.Count; ++i)
+                    Interfaces[i].Stop();
 
-            RemoveFromWorld();
+                RemoveFromWorld();
 
-            _Disposed = true;
+                _Disposed = true;
+            }
         }
 
-        public virtual void Update()
+        public virtual void Update(long Tick)
         {
-            EvtInterface.Update(TCPManager.GetTimeStampMS());
+            for(int i=0;i<Interfaces.Count;++i)
+                Interfaces[i].Update(Tick);
         }
 
         public bool _Loaded = false;
@@ -69,8 +81,70 @@ namespace WorldServer
 
         public virtual void OnLoad()
         {
-
+            foreach (BaseInterface Interface in Interfaces)
+                Interface.Load();
         }
+ 
+        public virtual void Save()
+        {
+            foreach (BaseInterface Interface in Interfaces)
+            {
+                try
+                {
+                    Interface.Save();
+                }
+                catch (Exception e)
+                {
+                    Log.Error("Interface", e.ToString());
+                }
+            }
+        }
+ 
+        #region Interfaces
+
+        public BaseInterface AddInterface(BaseInterface Interface)
+        {
+            lock (Interfaces)
+            {
+                Interfaces.Add(Interface);
+            }
+
+            Interface.SetOwner(this);
+            return Interface;
+        }
+
+        public T AddInterface<T>() where T:BaseInterface 
+        {
+            BaseInterface Interface = Activator.CreateInstance<T>();
+
+            lock (Interfaces)
+            {
+                Interfaces.Add(Interface);
+            }
+
+            Interface.SetOwner(this);
+            return Interface as T;
+        }
+
+        public BaseInterface RemoveInterface(BaseInterface Interface)
+        {
+            lock (Interfaces)
+                Interfaces.Remove(Interface);
+
+            return Interface;
+        }
+
+        public BaseInterface GetInterface<T>() where T : BaseInterface
+        {
+            lock (Interfaces)
+                foreach (BaseInterface Interface in Interfaces)
+                    if (Interface is T)
+                        return Interface;
+
+            return null;
+        }
+
+        #endregion
 
         #region Sender
 
@@ -90,9 +164,14 @@ namespace WorldServer
         }
         public virtual void SendInteract(Player Plr,InteractMenu Menu)
         {
+            ScrInterface.OnInteract(this, Plr, Menu);
+            WorldMgr.GeneralScripts.OnWorldPlayerEvent("INTERACT", Plr, this);
         }
         public virtual void Say(string Msg, SystemData.ChatLogFilters Filter)
         {
+            if (Msg == null || Msg.Length == 0)
+                return;
+
             foreach (Player Plr in _PlayerRanged.ToArray())
                 if (Plr.Realm == GameData.Realms.REALMS_REALM_ORDER && GetPlayer().Realm == GameData.Realms.REALMS_REALM_ORDER)
                     Plr.SendMessage(this, Msg, Filter);
@@ -121,6 +200,11 @@ namespace WorldServer
         #endregion
 
         #region Position
+
+        public override string ToString()
+        {
+            return string.Format("(OffX = {0}, OffY = {1},Heading = {2}, Oid = {3}, Name= {4})", XOffset.ToString(), YOffset.ToString(),Heading.ToString(), Oid.ToString(), Name) + base.ToString();
+        }
 
         public UInt16 Heading;
         public UInt16 XOffset, YOffset;
@@ -168,9 +252,9 @@ namespace WorldServer
 
             WorldPosition.X = (int)((int)XZone + ((int)((int)x) & 0x00000FFF));
             WorldPosition.Y = (int)((int)YZone + ((int)((int)y) & 0x00000FFF));
-            WorldPosition.Z = Z / 2;
-            if (Zone.ZoneId == 161)
-                WorldPosition.Z = (32768 + Z) / 2;
+            WorldPosition.Z = Z;
+            if (Zone != null && Zone.ZoneId == 161)
+                WorldPosition.Z += 16384;
         }
 
         public void SetOffset(UInt16 OffX, UInt16 OffY)
@@ -222,7 +306,7 @@ namespace WorldServer
 			}
 			else
 			{
-				return -1;
+                return int.MaxValue;
 			}
         }
       
@@ -318,9 +402,12 @@ namespace WorldServer
             get { return _IsMoving; }
             set
             {
+                if (_IsMoving && !value)
+                    EvtInterface.Notify(EventName.ON_STOP_MOVE, this, null);
+
                 _IsMoving = value;
-                if(_IsMoving)
-                    EvtInterface.Notify("Moving", this, null);
+                if (_IsMoving)
+                    EvtInterface.Notify(EventName.ON_MOVE, this, null);
             }
         }
         public Point2D LastRangeCheck = new Point2D(0,0);
@@ -332,7 +419,7 @@ namespace WorldServer
             XOffset = OffX;
             YOffset = OffY;
         }
-        public virtual bool SetPosition(UInt16 PinX, UInt16 PinY, UInt16 PinZ, UInt16 Head)
+        public virtual bool SetPosition(UInt16 PinX, UInt16 PinY, UInt16 PinZ, UInt16 Head, bool SendState = false)
         {
             bool Updated = false;
             if (PinX != X || PinY != Y || PinZ != Z || Head != Heading)
@@ -341,19 +428,70 @@ namespace WorldServer
                 Y = PinY;
                 Z = PinZ;
                 Heading = Head;
-                IsMoving = true;
 
                 if(!IsPlayer())
-                    CalculOffset();
-
-                CalcWorldPositions();
-                Updated = Region.UpdateRange(this);
+                    IsMoving = true;
 
                 if (!IsPlayer())
-                    GetUnit().SendState(null);
+                {
+                    CalculOffset();
+                    CalcWorldPositions();
+
+                    if (SendState)
+                        GetUnit().StateDirty = true;
+                }
+                else
+                {
+                    CalcWorldPositions();
+
+                    UInt16 Ox = (UInt16)Math.Truncate((decimal)(X / 4096 + Zone.Info.OffX));
+                    UInt16 Oy = (UInt16)Math.Truncate((decimal)(Y / 4096 + Zone.Info.OffY));
+
+                    if (Ox != XOffset || Oy != YOffset)
+                    {
+                        return false;
+                    }
+                }
+
+                Updated = Region.UpdateRange(this);
             }
+            else if (!IsPlayer())
+                IsMoving = false;
 
             return Updated;
+        }
+
+        public bool _IsVisible = true;
+        public bool IsVisible
+        {
+            get
+            {
+                return _IsVisible;
+            }
+            set
+            {
+                if (_IsVisible != value)
+                {
+                    _IsVisible = value;
+                    if (IsInWorld())
+                        Region.UpdateRange(this, true);
+                }
+            }
+        }
+
+        public bool _IsActive;
+        public bool IsActive
+        {
+            get
+            {
+                return _IsActive;
+            }
+            set
+            {
+                _IsActive = value;
+                if (IsInWorld())
+                    Region.UpdateRange(this,true);
+            }
         }
 
         #endregion
@@ -395,7 +533,7 @@ namespace WorldServer
         }
         public virtual void ClearRange()
         {
-            //SendRemove(null);
+            SendRemove(null);
 
             foreach (Object Ranged in _ObjectRanged)
                 Ranged.RemoveInRange(this);
@@ -411,8 +549,27 @@ namespace WorldServer
                     Player.GetPlayer().SendCopy(Out);
 
             if (Self && IsPlayer())
-                GetPlayer().SendPacket(Out);
-                
+                GetPlayer().SendPacket(Out); 
+        }
+
+        public virtual void DispatchGroup(PacketOut Out)
+        {
+            if (IsPlayer())
+            {
+                Player Plr = GetPlayer();
+                if (Plr.Client == null)
+                    return;
+
+                if (Plr.GetGroup() != null)
+                    Plr.GetGroup().SendToGroup(Out);
+                else
+                    Plr.SendPacket(Out);
+            }
+        }
+
+        public virtual void OnRangeUpdate()
+        {
+
         }
 
         #endregion

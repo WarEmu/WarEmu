@@ -17,7 +17,7 @@ namespace WorldServer
             public UInt16 NameSize;
         }
 
-        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_CREATE_CHARACTER, "onCreateCharacter")]
+        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_CREATE_CHARACTER, (int)eClientState.CharScreen, "onCreateCharacter")]
         static public void F_CREATE_CHARACTER(BaseClient client, PacketIn packet)
         {
             GameClient cclient = client as GameClient;
@@ -39,7 +39,6 @@ namespace WorldServer
 
             if (Name.Length > 2 && !CharMgr.NameIsUsed(Name))
             {
-
                 CharacterInfo CharInfo = CharMgr.GetCharacterInfo(Info.career);
                 if (CharInfo == null)
                 {
@@ -48,7 +47,7 @@ namespace WorldServer
                 else
                 {
 
-                    Log.Success("OnCreate", "Creating new Character : " + Name);
+                    Log.Success("OnCreate", "New Character : " + Name);
 
                     Character Char = new Character();
                     Char.AccountId = cclient._Account.AccountId;
@@ -61,6 +60,7 @@ namespace WorldServer
                     Char.Realm = CharInfo.Realm;
                     Char.RealmId = Program.Rm.RealmId;
                     Char.Sex = Info.sex;
+                    Char.FirstConnect = true;
 
                     if (!CharMgr.CreateChar(Char))
                     {
@@ -70,19 +70,19 @@ namespace WorldServer
                     {
 
                         Character_item Citm = null;
-                        CharacterInfo_item[] Items = CharMgr.GetCharacterInfoItem(Char.CareerLine);
+                        List < CharacterInfo_item > Items = CharMgr.GetCharacterInfoItem(Char.CareerLine);
 
-                        for (int i = 0; i < Items.Length; ++i)
+                        foreach (CharacterInfo_item Itm in Items)
                         {
-                            if (Items[i] == null)
+                            if (Itm == null)
                                 continue;
 
                             Citm = new Character_item();
-                            Citm.Counts = Items[i].Count;
+                            Citm.Counts = Itm.Count;
                             Citm.CharacterId = Char.CharacterId;
-                            Citm.Entry = Items[i].Entry;
-                            Citm.ModelId = Items[i].ModelId;
-                            Citm.SlotId = Items[i].SlotId;
+                            Citm.Entry = Itm.Entry;
+                            Citm.ModelId = Itm.ModelId;
+                            Citm.SlotId = Itm.SlotId;
                             CharMgr.CreateItem(Citm);
                         }
 
@@ -106,6 +106,7 @@ namespace WorldServer
                         CInfo.ZoneId = CharInfo.ZoneId;
 
                         CharMgr.Database.AddObject(CInfo);
+                        Program.AcctMgr.UpdateRealmCharacters(Program.Rm.RealmId, (uint)CharMgr.Database.GetObjectCount<Character>(" Realm=1"), (uint)CharMgr.Database.GetObjectCount<Character>(" Realm=2"));
 
                         Char.Value = CInfo;
 
@@ -123,7 +124,7 @@ namespace WorldServer
             }
         }
 
-        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_DELETE_CHARACTER, "onDeleteCharacter")]
+        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_DELETE_CHARACTER, (int)eClientState.CharScreen, "onDeleteCharacter")]
         static public void F_DELETE_CHARACTER(BaseClient client, PacketIn packet)
         {
             GameClient cclient = client as GameClient;
@@ -144,7 +145,7 @@ namespace WorldServer
             cclient.SendPacket(Out);
         }
 
-        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_DELETE_NAME, "onDeleteName")]
+        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_DELETE_NAME, (int)eClientState.CharScreen, "onDeleteName")]
         static public void F_DELETE_NAME(BaseClient client, PacketIn packet)
         {
             GameClient cclient = client as GameClient;
@@ -169,7 +170,7 @@ namespace WorldServer
             cclient.SendPacket(Out);
         }
 
-        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_DUMP_ARENAS_LARGE, "onDumpArenasLarge")]
+        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_DUMP_ARENAS_LARGE, (int)eClientState.CharScreen, "onDumpArenasLarge")]
         static public void F_DUMP_ARENAS_LARGE(BaseClient client, PacketIn packet)
         {
             GameClient cclient = client as GameClient;
@@ -177,6 +178,13 @@ namespace WorldServer
             if (!cclient.HasAccount())
             {
                 cclient.Disconnect();
+                return;
+            }
+
+            if (Program.Rm.OnlinePlayers >= Program.Rm.MaxPlayers)
+            {
+                PacketOut Out = new PacketOut((byte)Opcodes.F_LOGINQUEUE);
+                client.SendPacket(Out);
                 return;
             }
 
@@ -190,16 +198,18 @@ namespace WorldServer
                 return;
             }
 
-            if (cclient.Plr == null)
-                cclient.Plr = Player.CreatePlayer(cclient, Char);
+            {
+                if (cclient.Plr == null)
+                    cclient.Plr = Player.CreatePlayer(cclient, Char);
 
-            PacketOut Out = new PacketOut((byte)Opcodes.F_WORLD_ENTER);
-            Out.WriteUInt16(0x0608); // TODO
-            Out.Fill(0, 20);
-            Out.WriteString("38699", 5);
-            Out.WriteString("38700", 5);
-            Out.WriteString("0.0.0.0", 20);
-            cclient.SendPacket(Out);
+                PacketOut Out = new PacketOut((byte)Opcodes.F_WORLD_ENTER);
+                Out.WriteUInt16(0x0608); // TODO
+                Out.Fill(0, 20);
+                Out.WriteString("38699", 5);
+                Out.WriteString("38700", 5);
+                Out.WriteString("0.0.0.0", 20);
+                cclient.SendPacket(Out);
+            }
         }
 
         struct RandomNameInfo
@@ -207,28 +217,28 @@ namespace WorldServer
             public byte Race, Unk, Slot;
         }
 
-        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_RANDOM_NAME_LIST_INFO, "onRandomNameListInfo")]
+        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_RANDOM_NAME_LIST_INFO, (int)eClientState.CharScreen, "onRandomNameListInfo")]
         static public void F_RANDOM_NAME_LIST_INFO(BaseClient client, PacketIn packet)
         {
             GameClient cclient = client as GameClient;
             RandomNameInfo Info = BaseClient.ByteToType<RandomNameInfo>(packet);
 
-            Random_name[] Names = CharMgr.GetRandomNames();
+            List<Random_name> Names = CharMgr.GetRandomNames();
 
             PacketOut Out = new PacketOut((byte)Opcodes.F_RANDOM_NAME_LIST_INFO);
             Out.WriteByte(0);
             Out.WriteByte(Info.Unk);
             Out.WriteByte(Info.Slot);
             Out.WriteUInt16(0);
-            Out.WriteByte((byte)Names.Length);
+            Out.WriteByte((byte)Names.Count);
 
-            for (int i = Names.Length - 1; i >= 0; --i)
+            for (int i = Names.Count - 1; i >= 0; --i)
                 Out.FillString(Names[i].Name, Names[i].Name.Length + 1);
 
             cclient.SendPacket(Out);
         }
 
-        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_REQUEST_CHAR, "onRequestChar")]
+        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_REQUEST_CHAR, (int)eClientState.CharScreen, "onRequestChar")]
         static public void F_REQUEST_CHAR(BaseClient client, PacketIn packet)
         {
             GameClient cclient = client as GameClient;
@@ -264,7 +274,7 @@ namespace WorldServer
             }
         }
 
-        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_REQUEST_CHAR_TEMPLATES, "onRequestCharTemplates")]
+        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_REQUEST_CHAR_TEMPLATES, (int)eClientState.CharScreen, "onRequestCharTemplates")]
         static public void F_REQUEST_CHAR_TEMPLATES(BaseClient client, PacketIn packet)
         {
             GameClient cclient = client as GameClient;
@@ -274,7 +284,7 @@ namespace WorldServer
             cclient.SendPacket(Out);
         }
 
-        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_RENAME_CHARACTER, "onRenameCharacter")]
+        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_RENAME_CHARACTER, (int)eClientState.CharScreen, "onRenameCharacter")]
         static public void F_RENAME_CHARACTER(BaseClient client, PacketIn packet)
         {
             GameClient cclient = client as GameClient;

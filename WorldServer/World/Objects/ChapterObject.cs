@@ -31,7 +31,7 @@ namespace WorldServer
             Y = Info.PinY;
             Z = 16384;
             SetOffset(Info.OffX, Info.OffY);
-            Region.UpdateRange(this);
+            IsActive = true;
 
             base.OnLoad();
         }

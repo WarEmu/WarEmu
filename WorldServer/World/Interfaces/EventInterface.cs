@@ -27,15 +27,31 @@ namespace WorldServer
         ON_ENTER_COMBAT,
         ON_DEAL_DAMAGE,
         ON_RECEIVE_DAMAGE,
-        ON_HEAL,
-        ON_REVEIVE_HEAL,
+        ON_DEAL_HEAL,
+        ON_RECEIVE_HEAL,
+        ON_TARGET_DIE,
         ON_LEAVE_COMBAT,
 
         ON_REZURECT,
         ON_DIE,
 
-        ON_ACCEPT_QUEST,
-        ON_DECLINE_QUEST,
+        ON_GENERATE_LOOT, // Sender = Killer, Obj = Loot()
+
+        ON_ACCEPT_QUEST, // Sender = Player, Obj = Character_Quest
+        ON_DECLINE_QUEST,// Sender = Player, Obj = Character_Quest
+        ON_DONE_QUEST, 
+        ON_ABORD_QUEST, // Sender = Player, Obj = Character_Quest
+
+        PLAYING,
+        LEAVE,
+        ON_LEVEL_UP,
+
+        ARRIVE_AT_TARGET,
+        ON_WALK_TO,
+        ON_WALK,
+
+        ON_START_CASTING,
+        ON_CAST,
     };
 
     public delegate void EventDelegate();
@@ -103,15 +119,10 @@ namespace WorldServer
             }
         }
 
-        public delegate bool EventNotify(Object Obj,EventArgs Args); // True si il doit être delete apres la notification
+        public delegate bool EventNotify(Object Obj, object Args); // True si il doit être delete apres la notificatio
 
         public EventInterface()
-        {
-
-        }
-
-        public EventInterface(Object Obj)
-            : base(Obj)
+            : base()
         {
 
         }
@@ -159,7 +170,7 @@ namespace WorldServer
         public bool HasEvent(EventDelegate Del)
         {
             lock (_Events)
-            return _Events.Find(info => info.Del == Del) != null;
+                return _Events.Find(info => info.Del == Del) != null;
         }
         #endregion
 
@@ -168,58 +179,77 @@ namespace WorldServer
         public Dictionary<string,List<EventNotify>> _Notify = new Dictionary<string,List<EventNotify>>();
         public Dictionary<string, List<EventNotify>> _ForceNotify = new Dictionary<string, List<EventNotify>>();
 
-        public void Notify(string EventName,Object Sender, EventArgs Args)
+        public void Notify(EventName Name, Object Sender, object Args)
         {
            // Log.Info("Notify", "[" + (Obj != null ? Obj.Name : "") + "] Appel de :" + EventName);
 
+            List<EventNotify> L;
             lock (_Notify)
-                if (_Notify.ContainsKey(EventName))
-                    _Notify[EventName].RemoveAll(Event => Event.Invoke(Sender, Args));
+            {
+                if (_Notify.TryGetValue(Name.ToString(), out L))
+                    L.RemoveAll(Event => Event.Invoke(Sender, Args));
+            }
 
             lock (_ForceNotify)
-                if (_ForceNotify.ContainsKey(EventName))
-                    _ForceNotify[EventName].RemoveAll(Event => Event.Invoke(Sender, Args));
+            {
+                if (_ForceNotify.TryGetValue(Name.ToString(), out L))
+                    L.RemoveAll(Event => Event.Invoke(Sender, Args));
+            }
         }
 
-        public void AddEventNotify(string EventName,EventNotify Event)
+        public void AddEventNotify(EventName Name, EventNotify Event)
         {
-            AddEventNotify(EventName, Event, false);
+            AddEventNotify(Name, Event, false);
         }
-        public void AddEventNotify(string EventName,EventNotify Event,bool Force)
+        public void AddEventNotify(EventName Name, EventNotify Event, bool Force)
         {
-            Log.Info("AddEventNotify", "[" + (Obj != null ? Obj.Name : "") + "] Add de :" + EventName);
+            //if(_Owner.IsPlayer())
+            //Log.Info("AddEventNotify", "[" + (_Owner != null ? _Owner.Name : "") + "] Add de :" + EventName);
+            
+            List < EventNotify > L;
             if (!Force)
             {
                 lock (_Notify)
                 {
-                    if (!_Notify.ContainsKey(EventName))
-                        _Notify.Add(EventName, new List<EventNotify>());
+                    if (!_Notify.TryGetValue(Name.ToString(), out L))
+                    {
+                        L = new List<EventNotify>();
+                        _Notify.Add(Name.ToString(), L);
+                    }
 
-                    if (!_Notify[EventName].Contains(Event))
-                        _Notify[EventName].Add(Event);
+                    if (!L.Contains(Event))
+                        L.Add(Event);
                 }
             }
             else
             {
                 lock (_ForceNotify)
                 {
-                    if (!_ForceNotify.ContainsKey(EventName))
-                        _ForceNotify.Add(EventName, new List<EventNotify>());
+                    if (!_ForceNotify.TryGetValue(Name.ToString(), out L))
+                    {
+                        L = new List<EventNotify>();
+                        _ForceNotify.Add(Name.ToString(), L);
+                    }
 
-                    if (!_ForceNotify[EventName].Contains(Event))
-                        _ForceNotify[EventName].Add(Event);
+                    if (!L.Contains(Event))
+                        L.Add(Event);
                 }
             }
         }
-        public void RemoveEventNotify(string EventName, EventNotify Event)
+        public void RemoveEventNotify(EventName Name, EventNotify Event)
         {
+            List<EventNotify> L;
             lock (_Notify)
-                if (_Notify.ContainsKey(EventName))
-                    _Notify[EventName].Remove(Event);
+            {
+                if (_Notify.TryGetValue(Name.ToString(), out L))
+                    L.Remove(Event);
+            }
 
             lock (_ForceNotify)
-                if (_ForceNotify.ContainsKey(EventName))
-                    _ForceNotify[EventName].Remove(Event);
+            {
+                if (_ForceNotify.TryGetValue(Name.ToString(), out L))
+                    L.Remove(Event);
+            }
         }
 
         #endregion

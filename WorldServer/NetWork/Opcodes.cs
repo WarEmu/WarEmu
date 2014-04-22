@@ -1,7 +1,7 @@
 ﻿
 using System;
 
-enum Opcodes
+public enum Opcodes
 {
     F_UNK1 = 0x01,
     F_QUEST = 0x02,

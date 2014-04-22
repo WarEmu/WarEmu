@@ -9,7 +9,7 @@ namespace Common
 {
     [DataTable(PreCache = false, TableName = "zone_jumps", DatabaseName = "World")]
     [Serializable]
-    public class Zone_Jump : DataObject
+    public class Zone_jump : DataObject
     {
         [DataElement(Unique = true)]
         public uint Entry;

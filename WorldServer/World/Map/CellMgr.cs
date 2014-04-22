@@ -36,7 +36,7 @@ namespace WorldServer
             if (Obj.IsPlayer())
             {
                 _Players.Add(Obj.GetPlayer());
-                Region.LoadCells(X, Y, 1); // Si un joueur entre, alors on charge les cells autours sur 1 range
+                Region.LoadCells(X, Y, 1); // Si un joueur entre, alors on charge les cells autours sur 1 rangeen
             }
 
            _Objects.Add(Obj);
@@ -46,11 +46,14 @@ namespace WorldServer
         {
             //Log.Success("RemoveObject", "[" + X + "," + Y + "] Cell Remove " + Obj.Name);
 
-            if (Obj.IsPlayer())
-                _Players.Remove(Obj.GetPlayer());
+            if (Obj._Cell == this)
+            {
+                if (Obj.IsPlayer())
+                    _Players.Remove(Obj.GetPlayer());
 
-            _Objects.Remove(Obj);
-            Obj._Cell = null;
+                _Objects.Remove(Obj);
+                Obj._Cell = null;
+            }
         }
 
         #endregion
@@ -63,7 +66,8 @@ namespace WorldServer
             if (_Loaded)
                 return;
 
-            Log.Success(ToString(), "Loading... ");
+            Log.Debug(ToString(), "Loading... ");
+
             foreach (Creature_spawn Spawn in Spawns.CreatureSpawns)
                 Region.CreateCreature(Spawn);
 

@@ -10,7 +10,7 @@ namespace WorldServer
 {
     public class MailHandlers : IPacketHandler
     {
-        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_MAIL, "onMail")]
+        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_MAIL, (int)eClientState.Playing, "onMail")]
         static public void F_MAIL(BaseClient client, PacketIn packet)
         {
             GameClient cclient = client as GameClient;

@@ -89,7 +89,7 @@ namespace WorldServer
     public class Group
     {
         Player Leader;
-        List<Player> Members = new List<Player>();
+        public List<Player> Members = new List<Player>();
 
         public void Update()
         {

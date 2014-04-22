@@ -10,7 +10,7 @@ namespace WorldServer
 {
     public class InterfaceHandlers : IPacketHandler
     {
-        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_INTERFACE_COMMAND, "onInterfaceCommand")]
+        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_INTERFACE_COMMAND, (int)eClientState.WorldEnter, "onInterfaceCommand")]
         static public void F_INTERFACE_COMMAND(BaseClient client, PacketIn packet)
         {
             GameClient cclient = client as GameClient;
@@ -30,7 +30,6 @@ namespace WorldServer
                 case 2: // Resurrect Button
                     {
                         cclient.Plr.PreRespawnPlayer();
-                        Log.Success("Interface Command", "Respawn Player");
                     } break;
 
                 case 10: // Talisman Fuse

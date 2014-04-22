@@ -11,7 +11,7 @@ namespace WorldServer
 {
     public class TchatHandlers : IPacketHandler
     {
-        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_TEXT, "onText")]
+        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_TEXT, (int)eClientState.Playing, "onText")]
         static public void F_TEXT(BaseClient client, PacketIn packet)
         {
             GameClient cclient = client as GameClient;
@@ -22,11 +22,10 @@ namespace WorldServer
             byte Unk = packet.GetUint8();
             string Text = packet.GetString((int)(packet.Length - packet.Position));
 
-            Log.Success("Text", "Unk = " + Unk + ",String=" + Text);
             CommandMgr.HandleText(cclient.Plr, Text);
         }
 
-        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_EMOTE, "onEmote")]
+        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_EMOTE, (int)eClientState.Playing, "onEmote")]
         static public void F_EMOTE(BaseClient client, PacketIn packet)
         {
             GameClient cclient = client as GameClient;
@@ -39,8 +38,8 @@ namespace WorldServer
             PacketOut Out = new PacketOut((byte)Opcodes.F_EMOTE);
             Out.WriteUInt16(cclient.Plr.Oid);
             Out.WriteUInt16((UInt16)emote);
-            if (cclient.Plr.CbtInterface.HasTarget())
-                Out.WriteUInt16(cclient.Plr.CbtInterface.CurrentTarget.Target.Oid);
+            if (cclient.Plr.CbtInterface.HasTarget(GameData.TargetTypes.TARGETTYPES_TARGET_ALLY))
+                Out.WriteUInt16(cclient.Plr.CbtInterface.Targets[(int)GameData.TargetTypes.TARGETTYPES_TARGET_ALLY]);
             cclient.Plr.DispatchPacket(Out, false);
             cclient.Plr.SendPacket(Out);
         }

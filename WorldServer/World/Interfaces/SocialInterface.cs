@@ -11,15 +11,7 @@ namespace WorldServer
 {
     public class SocialInterface : BaseInterface
     {
-
         List<Character_social> _Socials = new List<Character_social>();
-
-        public SocialInterface(Object Obj)
-            : base(Obj)
-        {
-
-        }
-
 
         public void Load(List<Character_social> Socials)
         {
@@ -28,7 +20,6 @@ namespace WorldServer
                     Load(Social);
 
             base.Load();
-            Log.Success("SocialInterface", "Loaded " + _Socials.Count + " Socials of " + Obj.Oid);
         }
         public EventInterface Load(Character_social Social)
         {
@@ -36,12 +27,18 @@ namespace WorldServer
                 return null;
 
             EventInterface Interface = EventInterface.GetEventInterface((uint)Social.DistCharacterId);
-            Interface.AddEventNotify("Playing", OnPlayerConnect, true);
-            Interface.AddEventNotify("Leave", OnPlayerLeave, true);
+            Interface.AddEventNotify(EventName.PLAYING, OnPlayerConnect, true);
+            Interface.AddEventNotify(EventName.LEAVE, OnPlayerLeave, true);
             Social.Event = Interface;
             _Socials.Add(Social);
 
             return Interface;
+        }
+
+        public override void Save()
+        {
+            foreach (Character_social Social in _Socials)
+                CharMgr.Database.SaveObject(Social);
         }
 
         public override void Update(long Tick)
@@ -54,8 +51,8 @@ namespace WorldServer
             foreach(Character_social Social in _Socials)
                 if(Social != null && Social.GetEvent<EventInterface>() != null)
                 {
-                    Social.GetEvent<EventInterface>().RemoveEventNotify("Playing", OnPlayerConnect);
-                    Social.GetEvent<EventInterface>().RemoveEventNotify("Leave", OnPlayerLeave);
+                    Social.GetEvent<EventInterface>().RemoveEventNotify(EventName.PLAYING, OnPlayerConnect);
+                    Social.GetEvent<EventInterface>().RemoveEventNotify(EventName.LEAVE, OnPlayerLeave);
                 }
 
             base.Stop();
@@ -108,7 +105,6 @@ namespace WorldServer
 
         public void AddFriend(string Name)
         {
-            Log.Success("AddFriend", "Name=" + Name);
             Player Plr = GetPlayer();
             if (Plr == null)
                 return;
@@ -157,7 +153,7 @@ namespace WorldServer
                 Event = Load(Social);
             }
 
-            SendFriends(new List<Character_social>() { Social });
+            SendFriends(Social);
             Plr.SendLocalizeString(Char.Name, GameData.Localized_text.TEXT_SN_FRIENDSLIST_ADD_SUCCESS);
         }
         public void RemoveFriend(string Name)
@@ -179,8 +175,8 @@ namespace WorldServer
             if (Interface == null)
                 return;
 
-            Interface.RemoveEventNotify("Playing", OnPlayerConnect);
-            Interface.RemoveEventNotify("Leave", OnPlayerLeave);
+            Interface.RemoveEventNotify(EventName.PLAYING, OnPlayerConnect);
+            Interface.RemoveEventNotify(EventName.LEAVE, OnPlayerLeave);
 
             PacketOut Out = new PacketOut((byte)Opcodes.F_SOCIAL_NETWORK);
             Out.WriteUInt16(0);
@@ -199,7 +195,7 @@ namespace WorldServer
 
         #region Notify
 
-        public bool OnPlayerConnect(Object Sender, EventArgs Args)
+        public bool OnPlayerConnect(Object Sender, object Args)
         {
             Log.Success("OnPlayerConnect", "Name=" + Sender.Name);
 
@@ -217,7 +213,7 @@ namespace WorldServer
 
             return false; // On ne le delete pas
         }
-        public bool OnPlayerLeave(Object Sender, EventArgs Args)
+        public bool OnPlayerLeave(Object Sender, object Args)
         {
             Log.Success("OnPlayerLeave", "Name=" + Sender.Name);
 
@@ -302,7 +298,16 @@ namespace WorldServer
             foreach (Character_social Social in Socials)
                 BuildPlayerInfo(ref Out, Social);
 
-            Log.Dump("Friends", Out.ToArray(), 0, Out.ToArray().Length);
+            GetPlayer().SendPacket(Out);
+        }
+        public void SendFriends(Character_social Social)
+        {
+            PacketOut Out = new PacketOut((byte)Opcodes.F_SOCIAL_NETWORK);
+            Out.WriteUInt16(0);
+            Out.WriteByte(1);
+            Out.WriteByte(1);
+            Out.WriteByte(0);
+            BuildPlayerInfo(ref Out, Social);
             GetPlayer().SendPacket(Out);
         }
         public void SendFriends()

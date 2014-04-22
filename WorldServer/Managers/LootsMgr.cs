@@ -22,7 +22,7 @@ namespace WorldServer
     public class Loot
     {
         public UInt32 Money = 0;
-        public LootInfo[] Loots;
+        public List<LootInfo> Loots;
         public bool IsLootable()
         {
             if (GetLootCount() > 0 || Money > 0)
@@ -36,14 +36,14 @@ namespace WorldServer
         }
         public void TakeLoot(Player Plr, byte Id)
         {
-            if (Id >= Loots.Length || Loots[Id] == null)
+            if (Id >= Loots.Count || Loots[Id] == null)
                 Plr.SendLocalizeString("", GameData.Localized_text.TEXT_CANT_LOOT_THAT);
             else
             {
                 ItemError Error = Plr.ItmInterface.CreateItem(Loots[Id].Item, 1);
                 if (Error == ItemError.RESULT_OK)
                     Loots[Id] = null;
-                else
+                else if (Error == ItemError.RESULT_MAX_BAG)
                     Plr.SendLocalizeString("", GameData.Localized_text.TEXT_OVERAGE_CANT_LOOT);
             }
         }
@@ -73,7 +73,7 @@ namespace WorldServer
                         Plr.SendLocalizeString("", GameData.Localized_text.TEXT_OVERAGE_CANT_LOOT);
                     else
                     {
-                        for (byte i = 0; i < Loots.Length; ++i)
+                        for (byte i = 0; i < Loots.Count; ++i)
                         {
                             if (Loots[i] == null)
                                 continue;
@@ -94,7 +94,7 @@ namespace WorldServer
             Out.WriteByte(4);
             Out.WriteByte(GetLootCount());
 
-            for (byte i = 0; i < Loots.Length; ++i)
+            for (byte i = 0; i < Loots.Count; ++i)
             {
                 if (Loots[i] == null)
                     continue;
@@ -114,6 +114,7 @@ namespace WorldServer
             if (!Looter.IsPlayer())
                 return null;
 
+            Player Plr = Looter.GetPlayer();
             if (Corps.IsCreature())
             {
                 Creature Crea = Corps.GetCreature();
@@ -122,10 +123,19 @@ namespace WorldServer
                 if (CreatureLoots.Count <= 0)
                     return null;
 
+                QuestsInterface Interface = Plr.QtsInterface;
+
                 List<LootInfo> Loots = new List<LootInfo>();
+                float Pct;
                 foreach (Creature_loot Loot in CreatureLoots)
                 {
-                    float Pct = Loot.Pct * Program.Config.GlobalLootRate;
+                    if (Loot.Info.MinRank > Corps.Level + 4 || Loot.Info.MinRenown > (Corps.Level + 4) * 2)
+                        continue;
+
+                    if (Loot.Info.Realm != 0 && Loot.Info.Realm != (byte)Plr.Realm)
+                        continue;
+
+                    Pct = Loot.Pct * Program.Config.GlobalLootRate;
                     if (Pct <= 0)
                         Pct = 0.01f;
 
@@ -148,7 +158,31 @@ namespace WorldServer
                             break;
                     };
 
-                    if(Pct  > 100.0f || RandomMgr.Next(10000) < (Pct*100))
+                    if (Interface != null && Pct != 100.0f)
+                    {
+                        foreach (KeyValuePair<ushort, Character_quest> Kp in Interface._Quests)
+                        {
+                            if (!Kp.Value.Done && !Kp.Value.IsDone())
+                            {
+                                foreach (Character_Objectives Obj in Kp.Value._Objectives)
+                                {
+                                    if (!Obj.IsDone() && Obj.Objective.Item != null)
+                                    {
+                                        if (Obj.Objective.Item.Entry == Loot.ItemId)
+                                        {
+                                            Pct = 100;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (Pct >= 100)
+                                break;
+                        }
+                    }
+
+                    if(Pct >= 100f || RandomMgr.Next(10000) < (Pct*100))
                       Loots.Add(new LootInfo(Loot.Info));
                 }
 
@@ -156,10 +190,10 @@ namespace WorldServer
 
                 if (Loots.Count > 0 || Money > 0)
                 {
-                    Log.Success("LootMgr", "Generate Loot : " + Loots.Count);
                     Loot Lt = new Loot();
                     Lt.Money = Money;
-                    Lt.Loots = Loots.ToArray();
+                    Lt.Loots = Loots;
+                    Corps.EvtInterface.Notify(EventName.ON_GENERATE_LOOT, Looter, Lt);
                     return Lt;
                 }
               
