@@ -28,13 +28,14 @@ using FrameWork;
 
 namespace AccountCacher
 {
-    [ConsoleHandler("create",2,"New Account <Username,Password>")]
+    [ConsoleHandler("create", 2, "New Account <Username,Password,GMLevel(0-3)>")]
     public class CreateAccount : IConsoleHandler
     {
         public bool HandleCommand(string command, List<string> args)
         {
             string Username = args[0];
             string Password = args[1];
+            int GmLevel = int.Parse(args[2]);
 
             Account Acct = Program.AcctMgr.GetAccount(Username);
             if (Acct != null)
@@ -48,7 +49,7 @@ namespace AccountCacher
             Acct.Password = Password.ToLower();
             Acct.Ip = "127.0.0.1";
             Acct.Token = "";
-            Acct.GmLevel = 0;
+            Acct.GmLevel = (byte)GmLevel;
             AccountMgr.Database.AddObject(Acct);
 
             return true;
