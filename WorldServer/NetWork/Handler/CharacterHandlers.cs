@@ -262,9 +262,9 @@ namespace WorldServer
                 Out.WriteByte(0);
                 Out.WriteByte(4);
 
-                //if(cclient._Account.GmLevel == 0 && Realm is open rvr)
-                //    Out.WriteByte((byte)CharMgr.GetAccountRealm(cclient._Account.AccountId));
-                //else
+                if (cclient._Account.GmLevel == 0 && !Program.Config.CreateBothRealms)
+                    Out.WriteByte((byte)CharMgr.GetAccountRealm(cclient._Account.AccountId));
+                else
                     Out.WriteByte(0);
 
                 byte[] Chars = CharMgr.BuildCharacters(cclient._Account.AccountId);

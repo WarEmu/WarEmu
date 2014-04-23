@@ -28,6 +28,7 @@ namespace WorldServer
         public int XpRate = 1;
         public int RenownRate = 1;
         public bool ChatBetweenRealms = true;
+        public bool CreateBothRealms = true;
         public bool CleanSpawns = true;
 
         public string ZoneFolder = "zones/";
