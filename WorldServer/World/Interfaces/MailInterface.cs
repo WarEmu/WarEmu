@@ -188,11 +188,15 @@ namespace WorldServer
             Out.WriteUInt16(counts);
             GetPlayer().SendPacket(Out);
 
-            PacketOut Auction = new PacketOut((byte)Opcodes.F_MAIL);
-            Auction.WriteByte(0x9);
-            Auction.WriteByte((byte)GameData.MailboxType.MAILBOXTYPE_AUCTION);
-            Auction.WriteUInt16(0);
-            GetPlayer().SendPacket(Auction);
+            UInt16 auctionCounts = 0;
+            if (auctionCounts > 0)
+            {
+                PacketOut Auction = new PacketOut((byte)Opcodes.F_MAIL);
+                Auction.WriteByte(0x9);
+                Auction.WriteByte((byte)GameData.MailboxType.MAILBOXTYPE_AUCTION);
+                Auction.WriteUInt16(0);
+                GetPlayer().SendPacket(Auction);
+            }
         }
 
         public void SendMailBox()

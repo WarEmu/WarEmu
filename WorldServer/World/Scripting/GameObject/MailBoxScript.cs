@@ -32,30 +32,9 @@ namespace WorldServer
     {
         public override void OnInteract(Object Obj, Player Target, InteractMenu Menu)
         {
-            Log.Info("MailBox", "OnInteract " + Target.ToString());
+            Log.Debug("MailBox", "OnInteract " + Target.ToString());
 
-            {
-                PacketOut Out = new PacketOut((byte)Opcodes.F_MAIL);
-                Out.WriteUInt16(3);
-                Out.WriteUInt16(0);
-                Out.WriteByte(1);
-                Target.SendPacket(Out);
-            }
-
-
-            {
-                PacketOut Out = new PacketOut((byte)Opcodes.F_MAIL);
-                Out.WriteUInt16(10);
-                Out.WriteUInt32(0x0E000000);
-                Out.WriteUInt32(0x001E0AD7);
-                Out.WriteUInt16(0xA33C);
-                Target.SendPacket(Out);
-            }
-
-
-            {
-                //MailsMgr.SendMails(Target);
-            }
+            Target.MlInterface.SendMailBox();
         }
     }
 }

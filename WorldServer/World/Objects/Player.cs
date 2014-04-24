@@ -287,7 +287,6 @@ namespace WorldServer
             Health = TotalHealth;
             ItmInterface.SendAllItems(this);
             AbtInterface.SendAbilities();
-            MlInterface.SendMailCounts();
 
             QtsInterface.SendQuests();
             MvtInterface.CurrentMount.SendMount(this);
@@ -299,6 +298,8 @@ namespace WorldServer
                 GetGroup().Update();
 
             SendMessage(0, "MOTD: Welcome to WarEmu", "", SystemData.ChatLogFilters.CHATLOGFILTERS_CITY_ANNOUNCE);
+
+            MlInterface.SendMailCounts();
         }
 
         public long Next = 0;
