@@ -927,8 +927,12 @@ namespace WorldServer
                     b = Text.IndexOf("ITEM:", Pos);
                 }
 
-                SendPacket(Out);
+                Out.Position = p;
+                Out.WriteByte((byte)Count);
+                Out.Position = Out.Length;
             }
+
+            SendPacket(Out);
         }
         public void SendMessage(Object Sender, string Text,SystemData.ChatLogFilters Filter)
         {
