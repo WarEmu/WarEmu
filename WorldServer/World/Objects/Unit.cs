@@ -508,6 +508,7 @@ namespace WorldServer
             WorldMgr.GenerateXP(Killer, this);
             GenerateLoot(Killer);
 
+            ScrInterface.OnDie(this);
             EvtInterface.Notify(EventName.ON_DIE, this, null);
         }
 

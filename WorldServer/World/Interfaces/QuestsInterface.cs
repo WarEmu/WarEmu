@@ -90,8 +90,8 @@ namespace WorldServer
             if(Entry == 0)
                 return;
 
-            List < Quest > Starter = Crea.Spawn.Proto.StartingQuests;
-            List < Quest > Finisher = Crea.Spawn.Proto.FinishingQuests;
+            List<Quest> Starter = Crea.Spawn.Proto.StartingQuests;
+            List<Quest> Finisher = Crea.Spawn.Proto.FinishingQuests;
             List<Quest> InProgress = Starter != null ? Starter.FindAll(info => Plr.QtsInterface.HasQuest(info.Entry) && !Plr.QtsInterface.HasDoneQuest(info.Entry)) : null;
 
             string Text = WorldMgr.GetCreatureText(Entry);
@@ -183,6 +183,9 @@ namespace WorldServer
         {
             foreach (KeyValuePair<ushort, Character_quest> Kp in _Quests)
                 CharMgr.Database.SaveObject(Kp.Value);
+
+            // Lock? Threadsafe?
+            CharMgr._Chars[_Owner.GetPlayer().CharacterId].Quests = _Quests.Values.ToList<Character_quest>();
         }
 
         public bool HasQuest(UInt16 QuestID)
@@ -600,13 +603,15 @@ namespace WorldServer
 
         public void SendQuests()
         {
+            List<Character_quest> Quests = _Quests.Values.ToList<Character_quest>().FindAll(q => q.Done == false);
+
             PacketOut Out = new PacketOut((byte)Opcodes.F_QUEST_LIST);
-            Out.WriteByte((byte)_Quests.Count);
-            foreach (KeyValuePair<ushort, Character_quest> Kp in _Quests)
+            Out.WriteByte((byte)Quests.Count);
+            foreach (Character_quest Quest in Quests)
             {
-                Out.WriteUInt16(Kp.Value.QuestID);
+                Out.WriteUInt16(Quest.QuestID);
                 Out.WriteByte(0);
-                Out.WritePascalString(Kp.Value.Quest.Name);
+                Out.WritePascalString(Quest.Quest.Name);
                 Out.WriteByte(0);
             }
 
