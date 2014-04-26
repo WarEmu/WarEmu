@@ -413,12 +413,20 @@ namespace WorldServer
                             CanAdd = true;
                             NewCount += Count;
                         }
+                        else if (Type == Objective_Type.QUEST_UNKNOWN)
+                        {
+                            if (Objective.Objective.Guid == Entry)
+                            {
+                                CanAdd = true;
+                                NewCount += Count;
+                            }
+                        }
 
                         if (CanAdd)
                         {
                             Objective.Count = NewCount;
                             QuestKp.Value.Dirty = true;
-                            SendQuestUpdate(QuestKp.Value, Objective);
+                            SendQuestUpdate(QuestKp.Value);
                             CharMgr.Database.SaveObject(QuestKp.Value);
 
                             if (Objective.IsDone())
@@ -717,7 +725,7 @@ namespace WorldServer
             GetPlayer().SendPacket(Out);
         }
 
-        public void SendQuestUpdate(Character_quest Quest, Character_Objectives Obj)
+        public void SendQuestUpdate(Character_quest Quest)
         {
             if (GetPlayer() == null)
                 return;
@@ -725,8 +733,11 @@ namespace WorldServer
             PacketOut Out = new PacketOut((byte)Opcodes.F_QUEST_UPDATE);
             Out.WriteUInt16(Quest.QuestID);
             Out.WriteByte(Convert.ToByte(Quest.IsDone()));
-            Out.WriteByte(Obj.Objective.num);
-            Out.WriteByte((byte)Obj.Count);
+            Out.WriteByte((byte)Quest._Objectives.Count);
+            foreach (Character_Objectives Obj in Quest._Objectives)
+            {
+                Out.WriteByte((byte)Obj.Count);
+            }
             Out.WriteUInt16(0);
             GetPlayer().SendPacket(Out);
         }

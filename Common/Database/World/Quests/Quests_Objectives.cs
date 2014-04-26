@@ -57,7 +57,6 @@ namespace Common
         [DataElement()]
         public string ObjID;
 
-        public byte num;
         public Quest Quest;
         public Item_Info Item = null;
         public Creature_proto Creature = null;

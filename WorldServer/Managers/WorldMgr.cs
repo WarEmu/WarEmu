@@ -1628,7 +1628,6 @@ namespace WorldServer
                 if (quest == null)
                     continue;
 
-                Kp.Value.num = (byte)(quest.Objectives.Count + 1);
                 quest.Objectives.Add(Kp.Value);
             }
 
@@ -1647,7 +1646,6 @@ namespace WorldServer
                         NewObj.ObjType = (uint)Objective_Type.QUEST_SPEACK_TO;
                         NewObj.ObjID = Finisher.ToString();
                         NewObj.ObjCount = 1;
-                        NewObj.num = (byte)(quest.Objectives.Count + 1);
                         NewObj.Quest = quest;
 
                         quest.Objectives.Add(NewObj);
