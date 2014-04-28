@@ -1197,6 +1197,26 @@ namespace WorldServer
 
                     } break;
 
+                case Objective_Type.QUEST_USE_GO:
+                    {
+                        uint ObjID = 0;
+                        uint.TryParse(Obj.ObjID, out ObjID);
+
+                        if (ObjID != 0)
+                            Obj.GameObject = GetGameObjectProto(ObjID);
+
+                        if (Obj.GameObject == null)
+                        {
+                            Obj.Description = "Invalid Go,plz report to GM. QuestID " + Obj.Entry + ",ObjId=" + Obj.ObjID;
+                        }
+                        else
+                        {
+                            if (Obj.Description == null || Obj.Description.Length <= Obj.GameObject.Name.Length)
+                                Obj.Description = "Find " + Obj.GameObject.Name;
+                        }
+
+                    } break;
+
                 case Objective_Type.QUEST_KILL_MOB:
                     {
                         uint ObjID = 0;

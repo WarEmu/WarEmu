@@ -410,8 +410,11 @@ namespace WorldServer
                         }
                         else if (Type == Objective_Type.QUEST_USE_GO)
                         {
-                            CanAdd = true;
-                            NewCount += Count;
+                            if (Objective.Objective.GameObject != null && Entry == Objective.Objective.GameObject.Entry)
+                            {
+                                CanAdd = true;
+                                NewCount += Count;
+                            }
                         }
                         else if (Type == Objective_Type.QUEST_UNKNOWN)
                         {

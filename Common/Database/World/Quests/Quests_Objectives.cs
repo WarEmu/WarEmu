@@ -60,5 +60,6 @@ namespace Common
         public Quest Quest;
         public Item_Info Item = null;
         public Creature_proto Creature = null;
+        public GameObject_proto GameObject = null;
     }
 }
