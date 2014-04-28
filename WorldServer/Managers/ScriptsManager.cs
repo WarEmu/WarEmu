@@ -19,7 +19,7 @@ namespace WorldServer
 
         private IEnumerable<string> GetScriptFiles()
         {
-            return Directory.GetFiles(Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "Scripts")).Where(f => f.ToLower().EndsWith(".cs"));
+            return Directory.GetFiles(Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "Scripts"), "*", SearchOption.AllDirectories).Where(f => f.ToLower().EndsWith(".cs"));
         }
 
         private CompilerResults CompileScript(string filePath)
