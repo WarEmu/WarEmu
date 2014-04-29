@@ -416,6 +416,7 @@ namespace WorldServer
         public void BuildStats(ref PacketOut Out)
         {
             Out.WriteByte((byte)GameData.Stats.STATS_COUNT);
+            Out.WriteByte(GetAttackSpeed());
             Out.WriteByte(01);
             Out.WriteByte(0xF4);
         }

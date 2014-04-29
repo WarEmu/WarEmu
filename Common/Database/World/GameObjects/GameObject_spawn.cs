@@ -81,6 +81,7 @@ namespace Common
         public void BuildFromProto(GameObject_proto Proto)
         {
             this.Proto = Proto;
+            Entry = Proto.Entry;
             Unks = Proto.Unks;
             DisplayID = Proto.DisplayID;
         }
