@@ -74,6 +74,11 @@ namespace WorldServer
             base.Update(Tick);
         }
 
+        public override void Stop()
+        {
+            StopMoving();
+        }
+
         #region Turn
 
         public virtual void TurnTo(int tx, int ty)

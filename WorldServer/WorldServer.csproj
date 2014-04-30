@@ -158,6 +158,7 @@
     <Compile Include="World\Positions\Point3D.cs" />
     <Compile Include="World\Scripting\AGeneralScript.cs" />
     <Compile Include="World\Scripting\Creatures\WorldMountsScript.cs" />
+    <Compile Include="World\Scripting\GameObject\Door.cs" />
     <Compile Include="World\Scripting\GameObject\MailBoxScript.cs" />
     <Compile Include="World\Scripting\GeneralScriptAttributes.cs" />
     <Compile Include="World\Scripting\PacketSenderScript.cs" />
