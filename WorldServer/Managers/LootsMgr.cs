@@ -198,6 +198,50 @@ namespace WorldServer
                 }
               
             }
+            else if (Corps.IsGameObject())
+            {
+                // This will generate gameobject loot. Currently this only shows loot
+                // if a player needs an item it holds for a quest. If an object has
+                // been looted already or has no loot this will return null.
+                // Todo: Currently object loot always is 100%. Make this support
+                // non quest related loot.
+                GameObject GameObj = Corps.GetGameObject();
+                List<GameObject_loot> GameObjectLoots = WorldMgr.GetGameObjectLoots(GameObj.Spawn.Entry);
+                if (GameObjectLoots.Count <= 0 || GameObj.Looted)
+                    return null;
+
+                QuestsInterface Interface = Plr.QtsInterface;
+                List<LootInfo> Loots = new List<LootInfo>();
+                foreach (GameObject_loot Loot in GameObjectLoots)
+                {
+                    if (Interface != null)
+                    {
+                        foreach (KeyValuePair<ushort, Character_quest> Kp in Interface._Quests)
+                        {
+                            if (!Kp.Value.Done && !Kp.Value.IsDone())
+                            {
+                                foreach (Character_Objectives Obj in Kp.Value._Objectives)
+                                {
+                                    if (!Obj.IsDone() && Obj.Objective.Item != null)
+                                    {
+                                        if (Obj.Objective.Item.Entry == Loot.ItemId)
+                                        {
+                                            Loots.Add(new LootInfo(Loot.Info));
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                }
+
+                Loot Lt = new Loot();
+                Lt.Money = 0;
+                Lt.Loots = Loots;
+                return Lt;
+            }
 
             return null;
         }

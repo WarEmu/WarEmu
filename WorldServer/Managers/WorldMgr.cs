@@ -915,7 +915,67 @@ namespace WorldServer
 
             return Loots;
         }
+        #endregion
 
+        #region GameObjectLoots
+
+        static public Dictionary<uint, List<GameObject_loot>> _GameObject_loots = new Dictionary<uint, List<GameObject_loot>>();
+        static private void LoadGameObjectLoots(uint Entry)
+        {
+            if (FastLoading)
+                return;
+
+            if (!_GameObject_loots.ContainsKey(Entry))
+            {
+                Log.Debug("WorldMgr", "Loading GameObject Loots of " + Entry + " ...");
+
+                List<GameObject_loot> Loots = new List<GameObject_loot>();
+                IList<GameObject_loot> ILoots = Database.SelectObjects<GameObject_loot>("Entry=" + Entry);
+                foreach (GameObject_loot Loot in ILoots)
+                    Loots.Add(Loot);
+
+                _GameObject_loots.Add(Entry, Loots);
+
+                long MissingGameObject = 0;
+                long MissingItemProto = 0;
+
+                if (GetGameObjectProto(Entry) == null)
+                {
+                    Log.Debug("LoadLoots", "[" + Entry + "] Invalid GameObject Proto");
+                    _Creature_loots.Remove(Entry);
+                    ++MissingGameObject;
+                }
+
+                foreach (GameObject_loot Loot in _GameObject_loots[Entry].ToArray())
+                {
+                    Loot.Info = GetItem_Info(Loot.ItemId);
+
+                    if (Loot.Info == null)
+                    {
+                        Log.Debug("LoadLoots", "[" + Loot.ItemId + "] Invalid Item Info");
+                        _GameObject_loots[Entry].Remove(Loot);
+                        ++MissingItemProto;
+                    }
+                }
+
+                if (MissingItemProto > 0)
+                    Log.Error("LoadLoots", "[" + MissingItemProto + "] Missing Item Info");
+
+                if (MissingGameObject > 0)
+                    Log.Error("LoadLoots", "[" + MissingGameObject + "] Misssing GameObject proto");
+            }
+        }
+        static public List<GameObject_loot> GetGameObjectLoots(uint Entry)
+        {
+            LoadGameObjectLoots(Entry);
+
+            List<GameObject_loot> Loots;
+
+            if (!_GameObject_loots.TryGetValue(Entry, out Loots))
+                Loots = new List<GameObject_loot>();
+
+            return Loots;
+        }
         #endregion
 
         #region GameObjects

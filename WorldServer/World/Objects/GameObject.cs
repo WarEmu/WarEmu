@@ -12,6 +12,8 @@ namespace WorldServer
     public class GameObject : Unit
     {
         public GameObject_spawn Spawn;
+        public bool Looted;
+        static public int RELOOTABLE_TIME = 120000; // 2 Mins
 
         public GameObject()
             : base()
@@ -49,6 +51,7 @@ namespace WorldServer
             ScrInterface.AddScript(Spawn.Proto.ScriptName);
             base.OnLoad();
             IsActive = true;
+            Looted = false;
         }
 
         /*
@@ -82,7 +85,15 @@ FF FF
             Out.WriteUInt16(Spawn.GetUnk(1));
             Out.WriteUInt16(Spawn.GetUnk(2));
             Out.WriteByte(Spawn.Unk1);
-            Out.WriteUInt16(Spawn.GetUnk(3));
+
+            int flags = Spawn.GetUnk(3);
+            Loot Loots = LootsMgr.GenerateLoot(this, Plr);
+            if (Loots != null && Loots.IsLootable())
+            {
+                flags = flags | 4;
+            }
+
+            Out.WriteUInt16((ushort)flags);
             Out.WriteByte(Spawn.Unk2);
             Out.WriteUInt32(Spawn.Unk3);
             Out.WriteUInt16(Spawn.GetUnk(4));
@@ -109,7 +120,42 @@ FF FF
             if (Spawn.Proto.TokUnlock != 0)
                 Plr.TokInterface.AddTok(Info);
 
+            Loot Loots = LootsMgr.GenerateLoot(this, Plr);
+
+            if (Loots != null)
+            {
+                Loots.SendInteract(Plr, Menu);
+                // If object has been looted, make it unlootable
+                // and then Reset its lootable staus in XX seconds
+                if (!Loots.IsLootable())
+                {
+                    Looted = true;
+                    foreach (Object Obj in this._ObjectRanged)
+                    {
+                        if (Obj.IsPlayer())
+                        {
+                            this.SendMeTo(Obj.GetPlayer());
+                        }
+                    }
+                    EvtInterface.AddEvent(ResetLoot, RELOOTABLE_TIME, 1);   
+                }
+            }
+
             base.SendInteract(Plr, Menu);
+        }
+
+        // This will reset the GameObject loot after it has
+        // been looted. Allowing it to be looted again.
+        public void ResetLoot()
+        {
+            Looted = false;
+            foreach (Object Obj in this._ObjectRanged)
+            {
+                if (Obj.IsPlayer())
+                {
+                    this.SendMeTo(Obj.GetPlayer());
+                }
+            }
         }
     }
 }

@@ -288,6 +288,9 @@ namespace WorldServer
 
             SendQuestState(Quest, QuestCompletion.QUESTCOMPLETION_OFFER);
 
+            // This will make objects lootable if they contain a quest object.
+            updateObjects();
+
             _Owner.EvtInterface.Notify(EventName.ON_ACCEPT_QUEST, _Owner, CQuest);
             return true;
         }
@@ -301,7 +304,10 @@ namespace WorldServer
             _Quests.Remove(Quest.QuestID);
             SendQuestState(Quest.Quest, QuestCompletion.QUESTCOMPLETION_ABANDONED);
             CharMgr.Database.DeleteObject(Quest);
-            
+
+            // This will make objects unlootable if they were lootable because of a quest.
+            updateObjects();
+
             _Owner.EvtInterface.Notify(EventName.ON_ACCEPT_QUEST, _Owner, Quest);
         }
 
@@ -754,6 +760,27 @@ namespace WorldServer
                     Rewards.Add(Kp.Key, Kp.Value);
 
             return Rewards;
+        }
+
+        // For quests which require you to loot GameObjects this will update any objects
+        // around you and make them lootable if they have items you need for a quest.
+        // Notes: We could minimise the amount of SendMeTo's by checking if object are already
+        // flagged and unflag them or unflagged and need flagging. However it isnt possible
+        // to see if its already been flagged at the moment.
+        public void updateObjects()
+        {
+            GameObject GameObject;
+
+            foreach (Object Obj in _Owner._ObjectRanged)
+            {
+                if (Obj.IsGameObject())
+                {
+                    GameObject = Obj.GetGameObject();
+                    //Loot Loots = LootsMgr.GenerateLoot(GameObject, _Owner.GetPlayer());
+                    //if (Loots != null && Loots.IsLootable())
+                    GameObject.SendMeTo(_Owner.GetPlayer());
+                }
+            }
         }
     }
 }
