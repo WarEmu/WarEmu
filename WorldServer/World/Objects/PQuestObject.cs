@@ -79,11 +79,10 @@ namespace WorldServer
             Out.WriteByte(1);
             Out.WriteUInt16(0);
             Out.WritePascalString(Info.Name);
-            Out.WriteByte(0);
             Out.WriteUInt16(0);
             Out.WriteUInt16(Time); // Time in seconds
             Out.WriteUInt16(0);
-            Out.WriteByte(0);
+            Out.WriteUInt16(0);
             Plr.SendPacket(Out);
         }
 
