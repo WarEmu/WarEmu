@@ -71,5 +71,37 @@ namespace WorldServer
 
             cclient.Plr.ItmInterface.HandleTrade(packet);
         }
+
+        [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_USE_ITEM, (int)eClientState.Playing, "onUseItem")]
+        static public void F_USE_ITEM(BaseClient client, PacketIn packet)
+        {
+            GameClient cclient = client as GameClient;
+            if (!cclient.IsPlaying())
+                return;
+
+            Player Plr = cclient.Plr;
+
+            ushort slot = packet.GetUint16();
+
+            Item item = Plr.ItmInterface.GetItemInSlot(slot);
+
+            if (Plr.Level < item.Info.MinRank)
+            {
+                Plr.SendLocalizeString("", GameData.Localized_text.TEST_ITEM_PLAYER_LEVEL_TOO_LOW);
+                return;
+            }
+            else if (Plr.Rank < item.Info.MinRenown)
+            {
+                Plr.SendLocalizeString("", GameData.Localized_text.TEST_ITEM_PLAYER_RENOWN_TOO_LOW);
+                return;
+            }
+
+            if (item.Info.Type == 31 && item.Info.ScriptName == "HealthPotion") // Potion
+            {
+                Plr.DealHeal(Plr, (uint)item.Info.MinRank * 100);
+                Plr.ItmInterface.DeleteItem(slot, 1, true);
+            }
+            
+        }
     }
 }
