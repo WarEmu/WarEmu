@@ -160,7 +160,6 @@ FF FF
 
         public override string ToString()
         {
-
             return "SpawnId=" + Spawn.Guid + ",Entry=" + Spawn.Entry + ",Name=" + Name + ",Level=" + Level + ",Faction=" + Faction + ",Position :" + base.ToString();
         }
     }
