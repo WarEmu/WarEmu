@@ -84,7 +84,7 @@ namespace Launcher
                 case "English":
                     LangueId = 1;
                     break;
-                case "Deutch":
+                case "Deutsch":
                     LangueId = 3;
                     break;
                 case "Italian":
