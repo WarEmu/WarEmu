@@ -13,8 +13,7 @@ namespace Launcher
         [STAThread]
         static void Main()
         {            
-            if (!Client.Connect())
-                Environment.Exit(0);
+            if (!Client.Connect())  //Temponary fix for the realmlist to work
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
