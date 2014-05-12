@@ -104,7 +104,7 @@
             this.L_selection.Items.AddRange(new object[] {
             "French",
             "English",
-            "Deutch",
+            "Deutsch",
             "Italian",
             "Spanish",
             "Korean",
