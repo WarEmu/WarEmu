@@ -13,7 +13,7 @@ namespace Launcher
         [STAThread]
         static void Main()
         {            
-            if (!Client.Connect())  //Temponary fix for the realmlist to work
+            if (!Client.Connect())  //Temponary fix for the realmlist to work, while keeping the launcher open, requires option to add more ips to realmlist
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
