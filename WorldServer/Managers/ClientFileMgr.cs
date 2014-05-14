@@ -326,7 +326,7 @@ namespace WorldServer
                 Heights.Add(ZoneID, Info);
             }
 
-            return Info.GetHeight(PinX, PinY);
+            return Info.GetHeight(PinX, PinY)/2;
         }
 
         #endregion
