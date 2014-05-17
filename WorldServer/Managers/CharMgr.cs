@@ -121,7 +121,7 @@ namespace WorldServer
                 }
                 else _InfoStats[Info.CareerLine].Add(Info);
             }
-
+            /*
             int i, StatId;
             CharacterInfo_stats Previous, Current, PrevPrevious;
             foreach (KeyValuePair<byte, List<CharacterInfo_stats>> Stats in _InfoStats)
@@ -150,7 +150,7 @@ namespace WorldServer
                     }
                 }
             }
-
+            */
             Log.Success("CharacterMgr", "Loaded " + Chars.Count + " CharacterInfo_Stats");
         }
 
@@ -162,27 +162,16 @@ namespace WorldServer
 
             return null;
         }
-
-        static public Dictionary<ushort, List<CharacterInfo_stats>> _CareerLevelStats = new Dictionary<ushort, List<CharacterInfo_stats>>();
-
-        static public List<CharacterInfo_stats> GetCharacterInfoStats(byte CareerLine, byte Level)
+        static public CharacterInfo_stats[] GetCharacterInfoStats(byte CareerLine, byte Level)
         {
+            List<CharacterInfo_stats> _Stats = _InfoStats.ContainsKey(CareerLine) ? _InfoStats[CareerLine] : new List<CharacterInfo_stats>();
+
             List<CharacterInfo_stats> Stats = new List<CharacterInfo_stats>();
-            if (!_CareerLevelStats.TryGetValue((ushort)((int)CareerLine << 8 + (int)Level), out Stats))
-            {
-                Stats = new List<CharacterInfo_stats>();
+            foreach (CharacterInfo_stats Stat in _Stats)
+                if (Stat.CareerLine == CareerLine && Stat.Level == Level)
+                    Stats.Add(Stat);
 
-                List<CharacterInfo_stats> InfoStats;
-                if (_InfoStats.TryGetValue(CareerLine, out InfoStats))
-                {
-                    foreach(CharacterInfo_stats Stat in InfoStats)
-                        if (Stat.CareerLine == CareerLine && Stat.Level == Level)
-                            Stats.Add(Stat);
-                }
-
-                _CareerLevelStats.Add((ushort)((int)CareerLine << 8 + (int)Level), Stats);
-            }
-            return Stats;
+            return Stats.ToArray();
         }
         static public List<CharacterInfo_item> GetCharacterInfoItem(byte CareerLine)
         {
