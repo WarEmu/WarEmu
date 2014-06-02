@@ -1,4 +1,9 @@
 ﻿/*
+ * Copyright (C) 2014 WarEmu
+ *	http://WarEmu.com
+ * 
+ * Copyright (C) 2011-2013 APS
+ *	http://AllPrivateServer.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,7 +48,10 @@ namespace Common
         public byte PieceId;
 
         [DataElement()]
-        public uint InfluenceId;
+        public uint OrderInfluenceId;
+
+        [DataElement()]
+        public uint DestroInfluenceId;
 
         [DataElement()]
         public ushort TokExploreEntry;

@@ -1,5 +1,8 @@
 ﻿/*
- * Copyright (C) 2013 APS
+ * Copyright (C) 2014 WarEmu
+ *	http://WarEmu.com
+ * 
+ * Copyright (C) 2011-2013 APS
  *	http://AllPrivateServer.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -43,15 +46,11 @@ namespace WorldServer
         public ushort PositionX, PositionY;
         public ushort SizeX, SizeY;
         public System.Drawing.Color[,] Colors;
-        public Zone_Area OrderArea;
-        public Zone_Area DestruArea;
+        public Zone_Area Area;
 
         public bool IsPvp(byte Realm)
         {
-            if (OrderArea != null && OrderArea.Realm == Realm)
-                return false;
-
-            if (DestruArea != null && DestruArea.Realm == Realm)
+            if (!Program.Config.OpenRvR && Area != null && Area.Realm != 0)
                 return false;
 
             return true;
@@ -66,7 +65,9 @@ namespace WorldServer
             {
                 if (PinY >= PositionY && PinY < PositionY + SizeY)
                 {
-                    return true;
+                    System.Drawing.Color Col = Colors[PinX - PositionX, PinY - PositionY];
+                    if (Col.R != 255 && Col.G != 255 && Col.B != 255)
+                        return true;
                 }
             }
 
@@ -75,7 +76,7 @@ namespace WorldServer
 
         public override string ToString()
         {
-            return "Id:" + Id + ",Order:" + OrderArea + ",Destru:" + DestruArea;
+            return "Id:" + Id + ",Area:" + Area;
         }
     }
 
@@ -182,8 +183,7 @@ namespace WorldServer
 
                         }
                         Pieces.Add(Piece);
-                        Piece.OrderArea = GetArea(Piece.Id, 1);
-                        Piece.DestruArea = GetArea(Piece.Id, 2);
+                        Piece.Area = GetArea(Piece.Id);
                     }
                 }
             }
@@ -214,10 +214,10 @@ namespace WorldServer
             }
         }
 
-        public Zone_Area GetArea(byte PieceId, byte Realm)
+        public Zone_Area GetArea(byte PieceId)
         {
             if(Areas != null)
-                return Areas.Find(info => info.PieceId == PieceId && info.Realm == Realm);
+                return Areas.Find(info => info.PieceId == PieceId);
             return null;
         }
 
@@ -229,7 +229,6 @@ namespace WorldServer
             {
                 if (Piece.IsOn(PinX, PinY, ZoneId))
                 {
-                    if (Piece.Colors[PinX - Piece.PositionX, PinY - Piece.PositionY] != System.Drawing.Color.White)
                         return Piece;
                 }
             }
