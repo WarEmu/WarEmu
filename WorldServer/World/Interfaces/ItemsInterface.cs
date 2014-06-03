@@ -743,6 +743,8 @@ namespace WorldServer
             }
             else
             {
+                if (Slot >= BANK_START_SLOT && Slot <= BANK_END_SLOT)
+                    return true;
                 if (Slot > GetMaxInventorySlot())
                     return false;
             }
