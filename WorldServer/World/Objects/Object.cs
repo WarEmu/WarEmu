@@ -254,8 +254,8 @@ namespace WorldServer
             WorldPosition.X = (int)((int)XZone + ((int)((int)x) & 0x00000FFF));
             WorldPosition.Y = (int)((int)YZone + ((int)((int)y) & 0x00000FFF));
             WorldPosition.Z = Z;
-            if (Zone != null && Zone.ZoneId == 161)
-                WorldPosition.Z += 16384;
+         //   if (Zone != null && Zone.ZoneId == 161)
+          //      WorldPosition.Z += 16384;
         }
 
         public void SetOffset(UInt16 OffX, UInt16 OffY)

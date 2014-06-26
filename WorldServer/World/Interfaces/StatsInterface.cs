@@ -27,7 +27,7 @@ namespace WorldServer
 
             base.Load();
         }
-        public void Load(List<CharacterInfo_stats> Stats)
+        public void Load(CharacterInfo_stats[] Stats)
         {
             if (IsLoad)
                 return;
@@ -184,5 +184,6 @@ namespace WorldServer
         }
 
         #endregion
+
     }
 }

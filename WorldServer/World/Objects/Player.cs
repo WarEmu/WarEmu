@@ -582,8 +582,9 @@ namespace WorldServer
         {
             Dictionary<byte, UInt16> Diff = new Dictionary<byte, ushort>();
 
-            List<CharacterInfo_stats> NewStats = CharMgr.GetCharacterInfoStats(_Info.CareerLine, _Value.Level);
-            if (NewStats == null || NewStats.Count <= 0)
+            //List<CharacterInfo_stats> NewStats = CharMgr.GetCharacterInfoStats(_Info.CareerLine, _Value.Level);
+            CharacterInfo_stats[] NewStats = CharMgr.GetCharacterInfoStats(_Info.CareerLine, _Value.Level);
+            if (NewStats == null || NewStats.Length <= 0)
                 return Diff;
 
             foreach (CharacterInfo_stats Stat in NewStats)

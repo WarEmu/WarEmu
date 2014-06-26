@@ -93,12 +93,12 @@ namespace WorldServer
             X = Zone.CalculPin((uint)(Spawn.WorldX), true);
             Y = Zone.CalculPin((uint)(Spawn.WorldY), false);
             Z = (ushort)(Spawn.WorldZ);
-            if (Zone.ZoneId == 161)
-            {
-                Z += 16384;
-                X += 16384;
-                Y += 16384;
-            }
+           // if (Zone.ZoneId == 161)
+           // {
+               // Z += 16384;
+               // X += 16384;
+               // Y += 16384;
+         //   }
 
             // TODO : Bad Height Formula
             /*int HeightMap = HeightMapMgr.GetHeight(Zone.ZoneId, X, Y);
