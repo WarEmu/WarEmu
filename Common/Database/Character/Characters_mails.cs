@@ -13,16 +13,18 @@ namespace Common
     public class Character_mail : DataObject
     {
         private int _Guid;
+        private byte _AuctionType;
         private UInt32 _CharacterId;
         private UInt32 _CharacterIdSender;
         private string _SenderName;
         private string _ReceiverName;
+        private UInt32 _SendDate;
         private string _Title;
         private string _Content;
         private UInt32 _Money;
         private bool _Cr;
         private bool _Opened;
-        private UInt16 _Items;
+        private UInt16 _ItemsString;
 
         public Character_mail() : base() { }
 
@@ -31,6 +33,13 @@ namespace Common
         {
             get { return _Guid; }
             set { _Guid = value; Dirty = true; }
+        }
+
+        [DataElement(AllowDbNull = false)]
+        public byte AuctionType
+        {
+            get { return _AuctionType; }
+            set { _AuctionType = value; Dirty = true; }
         }
 
         [DataElement(AllowDbNull = false)]
@@ -59,6 +68,13 @@ namespace Common
         {
             get { return _ReceiverName; }
             set { _ReceiverName = value; Dirty = true; }
+        }
+
+        [DataElement(AllowDbNull = false)]
+        public UInt32 SendDate
+        {
+            get { return _SendDate; }
+            set { _SendDate = value; Dirty = true; }
         }
 
         [DataElement(Varchar = 255, AllowDbNull = false)]
@@ -97,13 +113,13 @@ namespace Common
         }
 
         [DataElement(AllowDbNull = false)]
-        public string Items
+        public string ItemsString
         {
             get
             {
                 string Value = "";
-                foreach (Character_item Obj in ItemsReqInfo)
-                    Value += Obj.Guid + ";";
+                foreach (KeyValuePair<uint, ushort> Item in Items)
+                    Value += Item.Key + ":" + Item.Value + "|";
                 return Value;
             }
             set
@@ -111,21 +127,20 @@ namespace Common
                 if (value.Length <= 0)
                     return;
 
-                string[] Objs = value.Split(';');
+                string[] Objs = value.Split('|');
 
                 foreach (string Obj in Objs)
                 {
                     if (Obj.Length <= 0)
                         continue;
 
-                    uint Guid = uint.Parse(Obj);
-                    ItemsReq.Add(Guid);
+                    string[] ItemInfo = Obj.Split(':');
+                    Items.Add(new KeyValuePair<uint, ushort>(uint.Parse(ItemInfo[0]), ushort.Parse(ItemInfo[1])));
                 }
                 Dirty = true;
             }
         }
 
-        public List<uint> ItemsReq = new List<uint>();
-        public List<Character_item> ItemsReqInfo = new List<Character_item>();
+        public List<KeyValuePair<uint, ushort>> Items = new List<KeyValuePair<uint, ushort>>();
     }
 }

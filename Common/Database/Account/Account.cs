@@ -34,7 +34,8 @@ namespace Common
         private string _Password;
         private string _Ip;
         private string _Token;
-        private byte _GmLevel;
+        private sbyte _GmLevel;
+        private int _Banned;
         public long LastCheck;
 
         public Account()
@@ -96,12 +97,23 @@ namespace Common
         }
 
         [DataElement(AllowDbNull=false)]
-        public byte GmLevel
+        public sbyte GmLevel
         {
             get { return _GmLevel; }
             set
             {
                 _GmLevel = value;
+                Dirty = true;
+            }
+        }
+
+        [DataElement(AllowDbNull = false)]
+        public int Banned
+        {
+            get { return _Banned; }
+            set
+            {
+                _Banned = value;
                 Dirty = true;
             }
         }

@@ -46,7 +46,7 @@ namespace WorldServer
 
                         switch (Type)
                         {
-                            case 2:                              
+                            case 2:
                                 if (!Mail.Opened)
                                 {
                                     Mail.Opened = true;
@@ -75,7 +75,7 @@ namespace WorldServer
                             case 7:
                                 packet.Skip(4);
                                 byte itemnum = packet.GetUint8();
-                                if (Mail.ItemsReqInfo.Count < itemnum + 1)
+                                if (Mail.Items.Count < itemnum + 1)
                                     return;
 
                                 UInt16 FreeSlot = Plr.ItmInterface.GetFreeInventorySlot();
@@ -85,9 +85,9 @@ namespace WorldServer
                                     return;
                                 }
 
-                                Character_item item = Mail.ItemsReqInfo.ElementAt(itemnum);
-                                Plr.ItmInterface.CreateItem(item.Entry, item.Counts);
-                                Mail.ItemsReqInfo.Remove(item);
+                                KeyValuePair<uint, ushort> item = Mail.Items.ElementAt(itemnum);
+                                Plr.ItmInterface.CreateItem(item.Key, item.Value);
+                                Mail.Items.Remove(item);
 
                                 CharMgr.SaveMail(Mail);
                                 Plr.MlInterface.SendMailUpdate(Mail);
@@ -100,7 +100,9 @@ namespace WorldServer
                                     Mail.Money = 0;
                                 }
                                 // Take as many items as you can before inventory is full
-                                foreach (Character_item curritem in Mail.ItemsReqInfo.ToArray())
+                                List<KeyValuePair<uint, ushort>> ToRemove = new List<KeyValuePair<uint, ushort>>();
+
+                                foreach (KeyValuePair<uint, ushort> curritem in Mail.Items)
                                 {
                                     UInt16 Slot = Plr.ItmInterface.GetFreeInventorySlot();
                                     if (Slot == 0)
@@ -108,9 +110,13 @@ namespace WorldServer
                                         Plr.SendLocalizeString("", GameData.Localized_text.TEXT_OVERAGE_CANT_TAKE_ATTACHMENTS);
                                         break;
                                     }
-                                    Plr.ItmInterface.CreateItem(curritem.Entry, curritem.Counts);
-                                    Mail.ItemsReqInfo.Remove(curritem);
+                                    Plr.ItmInterface.CreateItem(curritem.Key, curritem.Value);
+                                    ToRemove.Add(curritem);
                                 }
+
+                                foreach (KeyValuePair<uint, ushort> remove in ToRemove)
+                                    Mail.Items.Remove(remove);
+
                                 CharMgr.SaveMail(Mail);
                                 Plr.MlInterface.SendMailUpdate(Mail);
                                 Plr.MlInterface.SendMail(Mail);

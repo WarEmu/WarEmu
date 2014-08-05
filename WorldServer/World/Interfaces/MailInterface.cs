@@ -26,7 +26,6 @@ namespace WorldServer
             }
 
             base.Load();
-            Log.Success("MailInterface", "Loaded " + _Mails.Count + " Mails of " + _Owner.Oid);
         }
 
         public void BuildMail(PacketIn packet)
@@ -48,7 +47,7 @@ namespace WorldServer
 
             Character Receiver = CharMgr.GetCharacter(Name);
 
-            if (Receiver == null)
+            if (Receiver == null || Receiver.Realm != (byte)Plr.Realm)
             {
                 SendResult(GameData.MailResult.TEXT_MAIL_RESULT7);
                 return;
@@ -92,6 +91,7 @@ namespace WorldServer
             CMail.CharacterIdSender = Plr._Info.CharacterId;
             CMail.SenderName = Plr._Info.Name;
             CMail.ReceiverName = Name;
+            CMail.SendDate = (uint)TCPManager.GetTimeStamp();
             CMail.Title = Subject;
             CMail.Content = Message;
             CMail.Money = money;
@@ -111,8 +111,8 @@ namespace WorldServer
                 Item itm = Plr.ItmInterface.GetItemInSlot(itmslot);
                 if (itm != null)
                 {
-                    CMail.ItemsReqInfo.Add(itm.CharItem);
-                    Plr.ItmInterface.DeleteItem(itmslot, itm.CharItem.Counts, false);
+                    CMail.Items.Add(new KeyValuePair<uint, ushort>(itm.Info.Entry, itm.CharItem.Counts));
+                    Plr.ItmInterface.DeleteItem(itmslot, itm.CharItem.Counts, true);
                     itm.Owner = null;
                 }
 
@@ -126,7 +126,7 @@ namespace WorldServer
             if (mailToPlayer != null)
                 mailToPlayer.MlInterface.AddMail(CMail);
 
-            
+
             nextSend = (uint)TCPServer.GetTimeStamp() + 5;
         }
 
@@ -138,12 +138,13 @@ namespace WorldServer
             Out.WriteUInt32(0);
             Out.WriteUInt32((UInt32)Mail.Guid);
             Out.WriteUInt16((UInt16)(Mail.Opened ? 1 : 0));
-            Out.WriteByte(0x64); // Icon ID
+            Out.WriteByte((byte)(Mail.AuctionType == 0 ? 100 : 0)); // Icon ID
 
-            Out.WriteUInt32(0xFFE4D486); // Time
-            Out.WriteUInt32(0xFFE4D486); // Sent time
+            Out.WriteUInt32(Mail.SendDate); // Time
+            Out.WriteUInt32(Mail.SendDate); // Sent time
 
             Out.WriteUInt32((UInt32)Mail.CharacterIdSender); // Sender ID
+
             Out.WriteByte(0); // 1 = localized name
 
             Out.WriteByte(0);
@@ -154,19 +155,18 @@ namespace WorldServer
 
             Out.WriteByte(0);
             Out.WriteStringToZero(Mail.Title);
-
             Out.WriteUInt32(0);
 
             Out.WriteUInt32(Mail.Money);
-            Out.WriteUInt16((ushort)Mail.ItemsReqInfo.Count);
-            if(Mail.ItemsReqInfo.Count > 0)
+            Out.WriteUInt16((ushort)Mail.Items.Count);
+            if (Mail.Items.Count > 0)
                 Out.WriteByte(0);
-            if(Mail.ItemsReqInfo.Count > 8)
+            if (Mail.Items.Count > 8)
                 Out.WriteByte(0);
-                
-            foreach(Character_item item in Mail.ItemsReqInfo)
+
+            foreach (KeyValuePair<uint, ushort> item in Mail.Items)
             {
-                Out.WriteUInt32(item.ModelId);
+                Out.WriteUInt32(WorldMgr.GetItem_Info(item.Key).ModelId);
             }
         }
 
@@ -182,19 +182,20 @@ namespace WorldServer
             UInt16 counts = 0;
 
             foreach (Character_mail Mail in _Mails)
-                if (!Mail.Opened)
+                if (!Mail.Opened && Mail.AuctionType == 0)
                     counts++;
 
             Out.WriteUInt16(counts);
             GetPlayer().SendPacket(Out);
 
             UInt16 auctionCounts = 0;
+
             if (auctionCounts > 0)
             {
                 PacketOut Auction = new PacketOut((byte)Opcodes.F_MAIL);
                 Auction.WriteByte(0x9);
                 Auction.WriteByte((byte)GameData.MailboxType.MAILBOXTYPE_AUCTION);
-                Auction.WriteUInt16(0);
+                Auction.WriteUInt16(auctionCounts);
                 GetPlayer().SendPacket(Auction);
             }
         }
@@ -224,14 +225,17 @@ namespace WorldServer
             {
                 PacketOut Out = new PacketOut((byte)Opcodes.F_MAIL);
                 Out.WriteByte(0x0A);
-                Out.WriteUInt16(0);
-                Out.WriteByte((byte)_Mails.Count());
+                Out.WriteByte((byte)GameData.MailboxType.MAILBOXTYPE_PLAYER);
+                Out.WriteByte(0);
+                Out.WriteByte((byte)_Mails.Where(info => info.AuctionType == 0).Count());
                 foreach (Character_mail Mail in _Mails)
-                    BuildPreMail(Out, Mail);
+                    if (Mail.AuctionType == 0)
+                        BuildPreMail(Out, Mail);
                 Out.WriteUInt16((UInt16)_Mails.Count());
 
                 GetPlayer().SendPacket(Out);
             }
+
         }
 
         public void AddMail(Character_mail Mail)
@@ -284,14 +288,16 @@ namespace WorldServer
             Out.WriteByte(0x0D);
             Out.WriteByte(0);
             BuildPreMail(Out, Mail);
+
             Out.WriteUInt16((ushort)(Mail.Content.Length + 1));
             Out.WriteStringBytes(Mail.Content);
             Out.WriteByte(0);
-            Out.WriteByte((byte)Mail.ItemsReqInfo.Count);
-            foreach (Character_item item in Mail.ItemsReqInfo)
+   
+            Out.WriteByte((byte)Mail.Items.Count);
+            foreach (KeyValuePair<uint, ushort> item in Mail.Items)
             {
-                Item_Info Req = WorldMgr.GetItem_Info(item.Entry);
-                Item.BuildItem(ref Out, null, Req, 0, item.Counts);
+                Item_Info Req = WorldMgr.GetItem_Info(item.Key);
+                Item.BuildItem(ref Out, null, Req, 0, item.Value);
             }
             GetPlayer().SendPacket(Out);
         }

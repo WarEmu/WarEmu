@@ -607,15 +607,6 @@ namespace WorldServer
         {
             IList<Character_mail> Mails = Database.SelectObjects<Character_mail>(string.Format("CharacterId = {0}", characterId));
 
-            if (Mails != null)
-                foreach (Character_mail Mail in Mails)
-                    foreach (uint Guid in Mail.ItemsReq)
-                    {
-                        Character_item Req = _Items[Guid];
-                        if (Req != null)
-                            Mail.ItemsReqInfo.Add(Req);
-                    }
-
             return Mails;
         }
         static public void SaveMail(Character_mail mailItem)

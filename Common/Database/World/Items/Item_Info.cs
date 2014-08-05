@@ -56,6 +56,7 @@ namespace Common
         private UInt16 _MaxStack=0;
         private string _ScriptName;
         private byte[] _Unk27;
+        private bool _TwoHanded;
         public byte Realm;
 
         public Dictionary<byte, UInt16> _Stats = new Dictionary<byte, UInt16>();
@@ -298,6 +299,9 @@ namespace Common
 
         [DataElement(Varchar=255)]
         public string ScriptName { get { return _ScriptName; } set { _ScriptName = value; } }
+
+        [DataElement()]
+        public bool TwoHanded { get { return _TwoHanded; } set { _TwoHanded = value; } }
 
         public Dictionary<byte, UInt16> GetStats()
         {

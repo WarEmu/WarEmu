@@ -49,7 +49,7 @@ namespace AccountCacher
             Acct.Password = Password.ToLower();
             Acct.Ip = "127.0.0.1";
             Acct.Token = "";
-            Acct.GmLevel = (byte)GmLevel;
+            Acct.GmLevel = (sbyte)GmLevel;
             AccountMgr.Database.AddObject(Acct);
 
             return true;
