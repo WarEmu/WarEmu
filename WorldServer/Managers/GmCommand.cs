@@ -649,7 +649,7 @@ namespace WorldServer
             Object Obj = Plr.CbtInterface.GetCurrentTarget();
 
             string Pos = "Px="+Plr.X+",Py="+Plr.Y+",Pz="+Plr.Z;
-            Pos+=",Wx="+Plr._Value.WorldX +",Wy="+Plr._Value.WorldY;
+            Pos += ",Wx=" + Plr._Value.WorldX + ",Wy=" + Plr._Value.WorldY + ",Wz=" + Plr._Value.WorldZ;
             Pos += ",Ox=" + Plr.XOffset + ",Oy=" + Plr.YOffset;
             Pos += ",Wh=" + Plr._Value.WorldO + ",Ph=" + Plr.Heading + ",HeightMap=" + ClientFileMgr.GetHeight(Plr.Zone.ZoneId, Plr.X, Plr.Y);
             Plr.SendMessage(0, "", Pos, SystemData.ChatLogFilters.CHATLOGFILTERS_EMOTE);

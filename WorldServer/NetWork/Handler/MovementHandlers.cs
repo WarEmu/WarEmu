@@ -124,14 +124,34 @@ namespace WorldServer
             UInt16 Y = packet.GetUint16R();
             byte Unk1 = packet.GetUint8();
             UInt16 Z = packet.GetUint16R();
+            byte zmod = packet.GetUint8();
+
+            //Log.Success("zMod ",""+zmod);
+            // zmod is somewhat strange what i found out so far
+            // z mod is 255 while standing
+            // z mod is 0 while running and z is below 65535
+            // z mod is 1 while running and z is above 65535
+            // z mod can be  113 / 97 / 115 / 99 while running and z is below 65535 and enemy in target
+            // z mod is 99 / 100 / 116  while running and z is above 65535 and enemy in target
+
+            // z mod is 4 while running in water
+            // z mod is 68 while swimming in water
+            // z mod is ticking with 255 7 times then 68 while standing in deep water
+            // z mod is 12 while running in water (that should lower your health / kill you and reduce movement speed)
+            // z mod is ticking with 255 7 times then 12 while standing in lava
 
             if (packet.Size < 10)
                 return;
 
+            int z_temp = Z;
+
             Heading /= 8;
             X /= 2;
             Y /= 2;
-            Z /= 2;
+
+            // z update if z is higher then 65535
+            if (zmod != 0 && zmod != 97 && zmod != 113 && zmod != 99 && zmod != 115)
+                z_temp += 65535;
 
             if (Type != (byte)MovementTypes.NotMoving)
                 Plr.IsMoving = true;
@@ -159,10 +179,15 @@ namespace WorldServer
 
                 X = Plr.Zone.CalculCombat(X, Plr.XOffset, true);
                 Y = Plr.Zone.CalculCombat(Y, Plr.YOffset, false);
+
                 Heading /= 2;
-                Z += 32768;
-                Z /= 4;
-                Z /= 2;
+                z_temp /= 16;
+
+                // combat offset z
+                if (Plr._ZoneMgr.ZoneId == 161 || Plr._ZoneMgr.ZoneId == 162)
+                    z_temp += 12288;
+                else
+                    z_temp += 4096;
             }
             else
             {
@@ -185,14 +210,14 @@ namespace WorldServer
 
                 X = Plr.Zone.CalculPin(X, Plr.XOffset, true);
                 Y = Plr.Zone.CalculPin(Y, Plr.YOffset, false);
-                Z /= 2;
+                z_temp /= 4;
             }
 
-            if (Plr.IsInWorld() && Plr.Zone.ZoneId == 161)
-                Z += 16384;
+            //  if (Plr.IsInWorld() && Plr.Zone.ZoneId == 161)
+            //      Z += 16384;
 
-            //Log.Success("Movement after", "X=" + X + ",Y=" + Y + ",Z=" + Z + "," + Type + "," + Unk1 + "," + CombatByte);
-            Plr.SetPosition(X, Y, Z, Heading);
+            //Log.Success("Movement after", "X=" + X + ",Y=" + Y + ",Z=" + Z + ",ztemp = " + z_temp + "," + Type + "," + Unk1 + "," + CombatByte);
+            Plr.SetPosition(X, Y, (ushort)z_temp, Heading);
         }
 
         [PacketHandlerAttribute(PacketHandlerType.TCP, (int)Opcodes.F_DUMP_STATICS, (int)eClientState.WorldEnter, "onDumpStatics")]
