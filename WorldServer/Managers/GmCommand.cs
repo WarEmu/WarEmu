@@ -1095,7 +1095,8 @@ namespace WorldServer
             {
                 if (Obj.IsCreature())
                 {
-                    Creature c = (Creature)Obj;
+                    Creature c = Obj.GetCreature();
+                    c.Spawn.Proto = WorldMgr.CreatureProtos[c.Entry];
                     c.Region.CreateCreature(c.Spawn);
                     c.Dispose();
                 }
