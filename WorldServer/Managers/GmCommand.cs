@@ -1095,10 +1095,19 @@ namespace WorldServer
             {
                 if (Obj.IsCreature())
                 {
-                    Creature c = Obj.GetCreature();
-                    c.Spawn.Proto = WorldMgr.CreatureProtos[c.Entry];
-                    c.Region.CreateCreature(c.Spawn);
-                    c.Dispose();
+                    Creature Crea = Obj.GetCreature();
+                    Creature_proto Proto;
+                    try { 
+                        Proto = WorldMgr.CreatureProtos[Crea.Entry];
+                        Crea.Spawn.Proto = Proto;
+                    }
+                    catch
+                    {
+                        Plr.SendMessage(0, "Server", "NPC with Entry " + Crea.Entry + " not found in CreatureProtos, removing NPC", SystemData.ChatLogFilters.CHATLOGFILTERS_SHOUT);
+                        Crea.Spawn.Proto = null;
+                    }                        
+                    Crea.Region.CreateCreature(Crea.Spawn);
+                    Crea.Dispose();
                 }
             }
             Plr.SendMessage(0, "Server", "NPC spawn's Loaded : " + WorldMgr.CreatureSpawns.Count, SystemData.ChatLogFilters.CHATLOGFILTERS_SHOUT);
