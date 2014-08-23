@@ -1086,6 +1086,9 @@ namespace WorldServer
             WorldMgr.LoadCreatureItems();
             Plr.SendMessage(0, "Server", "NPC Items Loaded : " + WorldMgr._CreatureItems.Count, SystemData.ChatLogFilters.CHATLOGFILTERS_SHOUT);
 
+            WorldMgr.LoadCreatureProto();
+            Plr.SendMessage(0, "Server", "NPC's Loaded : " + WorldMgr.CreatureProtos.Count, SystemData.ChatLogFilters.CHATLOGFILTERS_SHOUT);
+
             List<Object> AllCells = new List<Object>();
             AllCells.AddRange(Plr._Cell._Objects);
             foreach (Object Obj in AllCells)
@@ -1097,7 +1100,7 @@ namespace WorldServer
                     c.Dispose();
                 }
             }
-            Plr.SendMessage(0, "Server", "NPC's Loaded : " + WorldMgr.CreatureSpawns.Count, SystemData.ChatLogFilters.CHATLOGFILTERS_SHOUT);
+            Plr.SendMessage(0, "Server", "NPC spawn's Loaded : " + WorldMgr.CreatureSpawns.Count, SystemData.ChatLogFilters.CHATLOGFILTERS_SHOUT);
             return true;
         }
 
