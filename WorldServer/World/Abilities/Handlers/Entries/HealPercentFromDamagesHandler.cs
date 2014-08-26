@@ -27,7 +27,7 @@ using FrameWork;
 
 namespace WorldServer
 {
-    [IAbilityType(new ushort[] { 1930, 1912, 9562 }, "I'll Take That! / Bleed Fer'Me / Transfer Essence")]
+    [IAbilityType("HealPercentFromDamage", "Heal Percent From Damages Handler")]
     public class HealPercentFromDamagesHandler : IAbilityTypeHandler
     {
         public Ability Ab;

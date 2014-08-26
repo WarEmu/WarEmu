@@ -27,7 +27,7 @@ using FrameWork;
 
 namespace WorldServer
 {
-    [IAbilityType(new ushort[] { 1908, 9558 }, "ResurrectsTarget", "ResurrectsTarget Handler")]
+    [IAbilityType("ResurrectsTarget", "ResurrectsTarget Handler")]
     public class ResurrectsTargetHandler : IAbilityTypeHandler
     {
         public Ability Ab;

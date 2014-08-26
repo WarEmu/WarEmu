@@ -85,6 +85,7 @@ namespace WorldServer
         static public List<GmCommandHandler> NpcCommands = new List<GmCommandHandler>()
         {
             new GmCommandHandler("spawn",NpcSpawn, null, 0, 1, "Spawn an npc"),
+            new GmCommandHandler("reload",ReloadCreaturesAndItems, null, 0, 0, "Reloads all Creatures in your current zone and all creature items"),
             new GmCommandHandler("remove",NpcRemove, null, 0, 1, "Delete the target <(0=World,1=Database)>"),
             new GmCommandHandler("go",NpcGoTo, null, 0, 3, "Npc Go To Target <X,Y,Z>"),
             new GmCommandHandler("come",NpcCome, null, 0, 0, "Move target to my position"),
@@ -122,7 +123,7 @@ namespace WorldServer
         static public List<GmCommandHandler> DatabaseCommands = new List<GmCommandHandler>()
         {
             new GmCommandHandler("itemsreload",ReloadItems, null, 1, 0, "Reload items information"),
-            new GmCommandHandler("chararacterreload",ReloadCharacter, null, 1, 0, "Reload character <name>"),
+            new GmCommandHandler("characterreload",ReloadCharacter, null, 1, 0, "Reload character <name>"),
         };
 
         static public List<GmCommandHandler> SearchCommands = new List<GmCommandHandler>()
@@ -1077,6 +1078,39 @@ namespace WorldServer
 
             Plr.SendMessage(0, "Server", "Npc Removed : " + Obj.GetCreature().Spawn.Guid, SystemData.ChatLogFilters.CHATLOGFILTERS_SHOUT);
 
+            return true;
+        }
+
+        static public bool ReloadCreaturesAndItems(Player Plr, ref List<string> Values)
+        {
+            WorldMgr.LoadCreatureItems();
+            Plr.SendMessage(0, "Server", "NPC Items Loaded : " + WorldMgr._CreatureItems.Count, SystemData.ChatLogFilters.CHATLOGFILTERS_SHOUT);
+
+            WorldMgr.LoadCreatureProto();
+            Plr.SendMessage(0, "Server", "NPC's Loaded : " + WorldMgr.CreatureProtos.Count, SystemData.ChatLogFilters.CHATLOGFILTERS_SHOUT);
+
+            List<Object> AllCells = new List<Object>();
+            AllCells.AddRange(Plr._Cell._Objects);
+            foreach (Object Obj in AllCells)
+            {
+                if (Obj.IsCreature())
+                {
+                    Creature Crea = Obj.GetCreature();
+                    Creature_proto Proto;
+                    try { 
+                        Proto = WorldMgr.CreatureProtos[Crea.Entry];
+                        Crea.Spawn.Proto = Proto;
+                    }
+                    catch
+                    {
+                        Plr.SendMessage(0, "Server", "NPC with Entry " + Crea.Entry + " not found in CreatureProtos, removing NPC", SystemData.ChatLogFilters.CHATLOGFILTERS_SHOUT);
+                        Crea.Spawn.Proto = null;
+                    }                        
+                    Crea.Region.CreateCreature(Crea.Spawn);
+                    Crea.Dispose();
+                }
+            }
+            Plr.SendMessage(0, "Server", "NPC spawn's Loaded : " + WorldMgr.CreatureSpawns.Count, SystemData.ChatLogFilters.CHATLOGFILTERS_SHOUT);
             return true;
         }
 
