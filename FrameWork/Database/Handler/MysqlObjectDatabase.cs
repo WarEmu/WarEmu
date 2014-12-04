@@ -664,6 +664,28 @@ namespace FrameWork
             return SelectObjectsImpl<TObject>("", isolation);
         }
 
+        // Return next AUTO_INCREMENT for <TObject> 
+        protected override int GetNextAutoIncrementImpl<TObject>()
+        {   
+            string SqlQuery = "SELECT * FROM information_schema.TABLES WHERE TABLE_NAME = '" + GetTableOrViewName(typeof(TObject)) + "'";
+            int NextAutoIncrement = 0;
+            
+            if (Connection.IsSQLConnection)
+            {
+                Connection.ExecuteSelect(SqlQuery, delegate(MySqlDataReader Reader)
+                {
+                    if (Reader.HasRows)
+                    {
+                        while (Reader.Read())
+                        {
+                            NextAutoIncrement = Convert.ToInt32(Reader.GetInt64("AUTO_INCREMENT"));
+                        }
+                    }
+                }, IsolationLevel.DEFAULT);
+            }
+            return NextAutoIncrement;
+        }
+
         // Retourne le nombre d'objet dans la db
         protected override int GetObjectCountImpl<TObject>(string where)
         {

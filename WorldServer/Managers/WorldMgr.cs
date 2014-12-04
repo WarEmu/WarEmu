@@ -742,6 +742,48 @@ namespace WorldServer
 
         #endregion
 
+        #region Waypoints
+
+        public static Lookup<uint, Waypoint> LookupWaypoints;
+
+        [LoadingFunction(true)]
+        static public void LoadNpcWaypoints()
+        {
+            Log.Debug("WorldMgr", "Loading Npc Waypoints...");
+
+            if (FastLoading)
+                return;
+
+            IList<Waypoint> TableWaypoints = Database.SelectAllObjects<Waypoint>();
+            LookupWaypoints = (Lookup<uint, Waypoint>)TableWaypoints.ToLookup(W => W.CreatureSpawnGUID, W => W);
+
+            if (TableWaypoints != null)
+                Log.Success("LoadNpcWaypoints", "Loaded " + TableWaypoints.Count + " Waypoints");
+        }
+
+        static public List<Waypoint> GetNpcWaypoints(uint CreatureSpawnGuid)
+        {
+            IEnumerable<Waypoint> NpcWaypoints = LookupWaypoints[CreatureSpawnGuid];
+            return NpcWaypoints.ToList();
+        }
+
+        static public void AddNpcWaypoint(Waypoint AddWaypoint)
+        {
+            Database.AddObject(AddWaypoint);
+        }
+
+        static public void SaveNpcWaypoint(Waypoint SaveWaypoint)
+        {
+            Database.SaveObject(SaveWaypoint);
+        }
+
+        static public void DeleteNpcWaypoint(Waypoint DeleteWaypoint)
+        {
+            Database.DeleteObject(DeleteWaypoint); 
+        }
+
+        #endregion
+
         #region CreatureItems
 
         static public Dictionary<uint, List<Creature_item>> _CreatureItems;
