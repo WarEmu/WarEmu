@@ -120,7 +120,8 @@ namespace WorldServer
 
             if (Spawn.Title == 0 && Spawn.Icone == 0 && Spawn.Proto.Title == 0 && Spawn.Icone == 0 && Spawn.Emote == 0 && Spawn.Proto.FinishingQuests == null && Spawn.Proto.StartingQuests == null)
             {
-                if (Faction <= 1 || Faction == 128 || Faction == 129)
+                //if (Faction <= 1 || Faction == 128 || Faction == 129)
+                if (false)
                 {
                     SFastRandom Random = new SFastRandom(X ^ Y ^ Z);
 
@@ -137,6 +138,7 @@ namespace WorldServer
                 }
             }
 
+            this.AiInterface.Waypoints = WorldMgr.GetNpcWaypoints(Spawn.Guid);            
             IsActive = true;
         }
         public override void SendMeTo(Player Plr)
