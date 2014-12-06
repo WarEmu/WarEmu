@@ -225,7 +225,7 @@ namespace WorldServer
         public bool Started = false;
         public bool Ended = false;
 
-        public void AddWaypoint(Waypoint AddWaypoint)
+        public void AddWaypoint(Waypoint AddWp)
         {
             if (_Owner.IsCreature())
             {
@@ -233,36 +233,36 @@ namespace WorldServer
                 {
                     if (Waypoints.Count == 0)
                     {
-                        // Starting Waypoint
-                        Waypoint StartWaypoint = new Waypoint();
-                        StartWaypoint.GUID = Convert.ToUInt32(WorldMgr.Database.GetNextAutoIncrement<Waypoint>());
-                        StartWaypoint.CreatureSpawnGUID = _Owner.GetCreature().Spawn.Guid;
-                        StartWaypoint.GameObjectSpawnGUID = _Owner._ObjectId;
-                        StartWaypoint.X = (ushort)_Owner.X;
-                        StartWaypoint.Y = (ushort)_Owner.Y;
-                        StartWaypoint.Z = (ushort)_Owner.Z;
-                        StartWaypoint.WaitAtEndMS = 2000;
-                        Waypoints.Add(StartWaypoint);
-                        WorldMgr.AddNpcWaypoint(StartWaypoint);
+                        Waypoint StartWp = new Waypoint();
+                        StartWp.GUID = Convert.ToUInt32(WorldMgr.Database.GetNextAutoIncrement<Waypoint>());
+                        StartWp.CreatureSpawnGUID = _Owner.GetCreature().Spawn.Guid;
+                        StartWp.GameObjectSpawnGUID = _Owner._ObjectId;
+                        StartWp.X = (ushort)_Owner.X;
+                        StartWp.Y = (ushort)_Owner.Y;
+                        StartWp.Z = (ushort)_Owner.Z;
+                        StartWp.Speed = AddWp.Speed;
+                        StartWp.WaitAtEndMS = AddWp.WaitAtEndMS;
+                        Waypoints.Add(StartWp);
+                        WorldMgr.DatabaseAddWaypoint(StartWp);
                     }
-                    Waypoint prevwaypoint = Waypoints[Waypoints.Count - 1];
-                    prevwaypoint.NextWaypointGUID = Convert.ToUInt32(WorldMgr.Database.GetNextAutoIncrement<Waypoint>());
-                    AddWaypoint.GUID = prevwaypoint.NextWaypointGUID;
-                    AddWaypoint.CreatureSpawnGUID = _Owner.GetCreature().Spawn.Guid;
-                    AddWaypoint.GameObjectSpawnGUID = _Owner._ObjectId;
-                    SaveWaypoint(prevwaypoint);
-                    Waypoints.Add(AddWaypoint);
-                    WorldMgr.AddNpcWaypoint(AddWaypoint);
+                    Waypoint PrevWp = Waypoints[Waypoints.Count - 1];
+                    PrevWp.NextWaypointGUID = Convert.ToUInt32(WorldMgr.Database.GetNextAutoIncrement<Waypoint>());
+                    AddWp.GUID = PrevWp.NextWaypointGUID;
+                    AddWp.CreatureSpawnGUID = _Owner.GetCreature().Spawn.Guid;
+                    AddWp.GameObjectSpawnGUID = _Owner._ObjectId;
+                    SaveWaypoint(PrevWp);
+                    Waypoints.Add(AddWp);
+                    WorldMgr.DatabaseAddWaypoint(AddWp);
                 }
             } //lock
         }
 
-        public void SaveWaypoint(Waypoint SaveWaypoint)
+        public void SaveWaypoint(Waypoint SaveWp)
         {
-            WorldMgr.SaveNpcWaypoint(SaveWaypoint);
+            WorldMgr.DatabaseSaveWaypoint(SaveWp);
         }
 
-        public void RemoveWaypoint(Waypoint RemoveWaypoint)
+        public void RemoveWaypoint(Waypoint RemoveWp)
         {
             switch (Waypoints.Count)
             {
@@ -274,7 +274,7 @@ namespace WorldServer
                     {
                         foreach (Waypoint Wp in Waypoints)
                         {
-                            WorldMgr.DeleteNpcWaypoint(Wp);
+                            WorldMgr.DatabaseDeleteWaypoint(Wp);
                         }
                         Waypoints.Clear();
                     } //lock
@@ -284,7 +284,7 @@ namespace WorldServer
                         int Index = -1;
                         foreach (Waypoint Wp in Waypoints)
                         {
-                            if (Wp.GUID == RemoveWaypoint.GUID)
+                            if (Wp.GUID == RemoveWp.GUID)
                             {
                                 Index = Waypoints.IndexOf(Wp);
                             }
@@ -306,8 +306,8 @@ namespace WorldServer
                                     Waypoints[Index - 1].NextWaypointGUID = Waypoints[Index].NextWaypointGUID;
                                 }
                             
-                                WorldMgr.SaveNpcWaypoint(Waypoints[Index - 1]);
-                                WorldMgr.DeleteNpcWaypoint(Waypoints[Index]);
+                                WorldMgr.DatabaseSaveWaypoint(Waypoints[Index - 1]);
+                                WorldMgr.DatabaseDeleteWaypoint(Waypoints[Index]);
                                 Waypoints.RemoveAt(Index);
                             }
                         }
@@ -323,6 +323,19 @@ namespace WorldServer
         public void RemoveWaypoint(int WaypointGUID)
         {
             RemoveWaypoint(GetWaypoint(WaypointGUID));
+        }
+
+        public void RandomizeWaypoint(Waypoint RandomWp)
+        {
+            if (_Owner.GetCreature() != null)
+            {
+                RandomWp.X = (ushort)(_Owner.GetCreature().X + StaticRandom.Instance.Next(50) + StaticRandom.Instance.Next(100) + StaticRandom.Instance.Next(150));
+                RandomWp.Y = (ushort)(_Owner.GetCreature().Y + StaticRandom.Instance.Next(50) + StaticRandom.Instance.Next(100) + StaticRandom.Instance.Next(150));
+                RandomWp.Z = (ushort)_Owner.GetCreature().Z;
+                RandomWp.Speed = 10;
+                RandomWp.WaitAtEndMS = (uint)(5000 + StaticRandom.Instance.Next(10) * 1000);
+                SaveWaypoint(RandomWp);
+            }
         }
 
         public Waypoint GetWaypoint(int WaypointGUID)

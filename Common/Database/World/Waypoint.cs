@@ -36,12 +36,12 @@ namespace Common
         static public byte Random = 2;
 
         private uint _GUID;
-        private uint _CreatureSpawnGUID;
-        private uint _GameObjectSpawnGUID;
-        private ushort _X;
-        private ushort _Y;
-        private ushort _Z;
-        private ushort _O;
+        private uint _CreatureSpawnGUID=0;
+        private uint _GameObjectSpawnGUID=0;
+        private ushort _X=0;
+        private ushort _Y=0;
+        private ushort _Z=0;
+        private ushort _O=0;
         private ushort _Speed=100;
         private byte _EmoteOnStart;
         private byte _EmoteOnEnd;

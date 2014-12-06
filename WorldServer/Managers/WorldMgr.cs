@@ -767,19 +767,19 @@ namespace WorldServer
             return NpcWaypoints.ToList();
         }
 
-        static public void AddNpcWaypoint(Waypoint AddWaypoint)
+        static public void DatabaseAddWaypoint(Waypoint AddWp)
         {
-            Database.AddObject(AddWaypoint);
+            Database.AddObject(AddWp);
         }
 
-        static public void SaveNpcWaypoint(Waypoint SaveWaypoint)
+        static public void DatabaseSaveWaypoint(Waypoint SaveWp)
         {
-            Database.SaveObject(SaveWaypoint);
+            Database.SaveObject(SaveWp);
         }
 
-        static public void DeleteNpcWaypoint(Waypoint DeleteWaypoint)
+        static public void DatabaseDeleteWaypoint(Waypoint DeleteWp)
         {
-            Database.DeleteObject(DeleteWaypoint); 
+            Database.DeleteObject(DeleteWp); 
         }
 
         #endregion
