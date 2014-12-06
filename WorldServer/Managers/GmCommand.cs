@@ -1033,6 +1033,7 @@ namespace WorldServer
             Wp.WaitAtEndMS = 2000;
 
             Target.GetUnit().AiInterface.AddWaypoint(Wp);
+
             List<string> Empty = null;
             return NpcListWaypoint(Plr, ref Empty);
         }
@@ -1052,11 +1053,13 @@ namespace WorldServer
                 Plr.SendMessage(0, "Server", "Invalid Waypoint ID. Use .waypoint list", SystemData.ChatLogFilters.CHATLOGFILTERS_SHOUT);
                 return true;
             }
+
             Wp.X = (ushort)Plr.X;
             Wp.Y = (ushort)Plr.Y;
             Wp.Z = (ushort)Plr.Z;
-
+            
             IA.SaveWaypoint(Wp);
+ 
             List<string> Empty = null;
             return NpcListWaypoint(Plr, ref Empty);
         }
@@ -1076,7 +1079,9 @@ namespace WorldServer
                 Plr.SendMessage(0, "Server", "Invalid Waypoint ID. Use .waypoint list", SystemData.ChatLogFilters.CHATLOGFILTERS_SHOUT);
                 return true;
             }
+
             IA.RemoveWaypoint(Wp);
+
             List<string> Empty = null;
             return NpcListWaypoint(Plr, ref Empty);
         }
@@ -1096,7 +1101,6 @@ namespace WorldServer
             }
 
             Plr.SendMessage(0, "Server", Message, SystemData.ChatLogFilters.CHATLOGFILTERS_SHOUT);
-
             return true;
         }
 

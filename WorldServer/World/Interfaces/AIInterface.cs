@@ -1,10 +1,9 @@
-﻿using System;
+﻿using Common;
+using FrameWork;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-
-using FrameWork;
-using Common;
 
 namespace WorldServer
 {
@@ -215,7 +214,6 @@ namespace WorldServer
         #endregion
 
         #region Waypoints
-
         public List<Waypoint> Waypoints = new List<Waypoint>();
         public Waypoint CurrentWaypoint;
         public byte CurrentWaypointType = Waypoint.Loop;
@@ -225,36 +223,45 @@ namespace WorldServer
         public bool Started = false;
         public bool Ended = false;
 
+        // Waypoints
+        private static readonly object WaypointsTableLock = new object();
+
         public void AddWaypoint(Waypoint AddWp)
         {
             if (_Owner.IsCreature())
             {
-                lock (Waypoints)
+                if (Waypoints.Count == 0)
                 {
-                    if (Waypoints.Count == 0)
+                    Waypoint StartWp = new Waypoint();
+                    StartWp.CreatureSpawnGUID = _Owner.GetCreature().Spawn.Guid;
+                    StartWp.GameObjectSpawnGUID = _Owner._ObjectId;
+                    StartWp.X = (ushort)_Owner.X;
+                    StartWp.Y = (ushort)_Owner.Y;
+                    StartWp.Z = (ushort)_Owner.Z;
+                    StartWp.Speed = AddWp.Speed;
+                    StartWp.WaitAtEndMS = AddWp.WaitAtEndMS;
+
+                    lock (WaypointsTableLock)
                     {
-                        Waypoint StartWp = new Waypoint();
                         StartWp.GUID = Convert.ToUInt32(WorldMgr.Database.GetNextAutoIncrement<Waypoint>());
-                        StartWp.CreatureSpawnGUID = _Owner.GetCreature().Spawn.Guid;
-                        StartWp.GameObjectSpawnGUID = _Owner._ObjectId;
-                        StartWp.X = (ushort)_Owner.X;
-                        StartWp.Y = (ushort)_Owner.Y;
-                        StartWp.Z = (ushort)_Owner.Z;
-                        StartWp.Speed = AddWp.Speed;
-                        StartWp.WaitAtEndMS = AddWp.WaitAtEndMS;
                         Waypoints.Add(StartWp);
                         WorldMgr.DatabaseAddWaypoint(StartWp);
                     }
-                    Waypoint PrevWp = Waypoints[Waypoints.Count - 1];
-                    PrevWp.NextWaypointGUID = Convert.ToUInt32(WorldMgr.Database.GetNextAutoIncrement<Waypoint>());
-                    AddWp.GUID = PrevWp.NextWaypointGUID;
-                    AddWp.CreatureSpawnGUID = _Owner.GetCreature().Spawn.Guid;
-                    AddWp.GameObjectSpawnGUID = _Owner._ObjectId;
-                    SaveWaypoint(PrevWp);
+                    // lock (WaypointsTableLock)
+                }
+                AddWp.CreatureSpawnGUID = _Owner.GetCreature().Spawn.Guid;
+                AddWp.GameObjectSpawnGUID = _Owner._ObjectId;
+                lock (WaypointsTableLock)
+                {
+                    AddWp.GUID = Convert.ToUInt32(WorldMgr.Database.GetNextAutoIncrement<Waypoint>());
                     Waypoints.Add(AddWp);
                     WorldMgr.DatabaseAddWaypoint(AddWp);
                 }
-            } //lock
+                // lock (WaypointsTableLock)
+                Waypoint PrevWp = Waypoints[Waypoints.Count - 1];
+                PrevWp.NextWaypointGUID = AddWp.GUID;
+                SaveWaypoint(PrevWp);
+            }
         }
 
         public void SaveWaypoint(Waypoint SaveWp)
@@ -270,17 +277,19 @@ namespace WorldServer
                 case 1:
                     break;
                 case 2:
-                    lock (Waypoints)
+                    lock (WaypointsTableLock)
                     {
                         foreach (Waypoint Wp in Waypoints)
                         {
                             WorldMgr.DatabaseDeleteWaypoint(Wp);
                         }
                         Waypoints.Clear();
-                    } //lock
+                    }
+                    // lock (WaypointsTableLock)
                     break;
                 default:
-                    lock (Waypoints) {
+                    lock (WaypointsTableLock)
+                    {
                         int Index = -1;
                         foreach (Waypoint Wp in Waypoints)
                         {
@@ -291,11 +300,7 @@ namespace WorldServer
                         }
                         if (Index != -1)
                         {
-                            if (Index == 0)
-                            {
-                                // Delete startingpoint isn't allowed
-                            }
-                            else
+                            if (Index != 0)
                             {
                                 if (Index == Waypoints.Count)
                                 {
@@ -311,11 +316,8 @@ namespace WorldServer
                                 Waypoints.RemoveAt(Index);
                             }
                         }
-                        else
-                        {
-                            // No match
-                        }
-                    } // lock
+                    }
+                    // lock (WaypointsTableLock)
                     break;
             } // switch
         }

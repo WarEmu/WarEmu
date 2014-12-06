@@ -7,6 +7,7 @@ using System.Threading;
 
 namespace FrameWork
 {
+    // Invoke through FrameWork.StaticRandom.Instance.next(...)
     public static class StaticRandom
     {
         private static int seed;

@@ -124,12 +124,14 @@ namespace WorldServer
             {
                 if (Faction <= 1 || Faction == 128 || Faction == 129)
                 {
-                    if (AiInterface.Waypoints.Count == 0)
+                    if (AiInterface.Waypoints.Count <= 4)
                     {
-                        for (int i = 0; i < 3; ++i)
+                        int i = 0;
+                        if (AiInterface.Waypoints.Count != 0)
+                            i = AiInterface.Waypoints.Count - 1;
+                        for (; i < 3; ++i)
                         {                            
-                            Waypoint Wp = new Waypoint();
-                            AiInterface.AddWaypoint(Wp);
+                            AiInterface.AddWaypoint(new Waypoint());
                         }
                     }
                     foreach (Waypoint Wp in AiInterface.Waypoints)
