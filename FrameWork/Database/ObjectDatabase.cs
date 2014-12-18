@@ -231,6 +231,12 @@ namespace FrameWork
             }
         }
 
+        public int GetNextAutoIncrement<TObject>()
+            where TObject : DataObject
+        {
+            return GetNextAutoIncrementImpl<TObject>();
+        }
+
         public int GetObjectCount<TObject>()
             where TObject : DataObject
         {
@@ -447,6 +453,9 @@ namespace FrameWork
 
         // Sélectionne tous les objets de la database
         protected abstract IList<TObject> SelectAllObjectsImpl<TObject>(IsolationLevel isolation)
+            where TObject : DataObject;
+        
+        protected abstract int GetNextAutoIncrementImpl<TObject>()
             where TObject : DataObject;
 
         // Retourn le nombre d'objet dans la database

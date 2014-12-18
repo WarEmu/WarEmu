@@ -118,25 +118,28 @@ namespace WorldServer
             ScrInterface.AddScript(Spawn.Proto.ScriptName);
             base.OnLoad();
 
+            AiInterface.Waypoints = WorldMgr.GetNpcWaypoints(Spawn.Guid);
+
             if (Spawn.Title == 0 && Spawn.Icone == 0 && Spawn.Proto.Title == 0 && Spawn.Icone == 0 && Spawn.Emote == 0 && Spawn.Proto.FinishingQuests == null && Spawn.Proto.StartingQuests == null)
             {
                 if (Faction <= 1 || Faction == 128 || Faction == 129)
                 {
-                    SFastRandom Random = new SFastRandom(X ^ Y ^ Z);
-
-                    for (int i = 0; i < 3; ++i)
+                    if (AiInterface.Waypoints.Count <= 4)
                     {
-                        Waypoint Wp = new Waypoint();
-                        Wp.X = (ushort)(X + Random.randomInt(50) + Random.randomInt(100) + Random.randomInt(150));
-                        Wp.Y = (ushort)(Y + Random.randomInt(50) + Random.randomInt(100) + Random.randomInt(150));
-                        Wp.Z = (ushort)Z;
-                        Wp.Speed = 10;
-                        Wp.WaitAtEndMS = (uint)(5000 + Random.randomIntAbs(10) * 1000);
-                        AiInterface.AddWaypoint(Wp);
+                        int i = 0;
+                        if (AiInterface.Waypoints.Count != 0)
+                            i = AiInterface.Waypoints.Count - 1;
+                        for (; i < 3; ++i)
+                        {                            
+                            AiInterface.AddWaypoint(new Waypoint());
+                        }
+                    }
+                    foreach (Waypoint Wp in AiInterface.Waypoints)
+                    {
+                        AiInterface.RandomizeWaypoint(Wp);
                     }
                 }
-            }
-
+            }            
             IsActive = true;
         }
         public override void SendMeTo(Player Plr)

@@ -676,13 +676,21 @@ namespace WorldServer
             if (Protos != null)
                 foreach (Creature_proto Proto in Protos)
                 {
-                   if(Proto.Model1 == 0 && Proto.Model2 == 0)
+                    if (Proto.Model1 == 0 && Proto.Model2 == 0)
+                    {
                         Proto.Model1 = Proto.Model2 = 1;
+                    }
 
-                   if (Proto.MinLevel == Proto.MaxLevel && Proto.MinLevel > 1)
-                       Proto.MaxLevel = (byte)(Proto.MinLevel + 1);
-                   else if (Proto.MaxLevel - Proto.MinLevel > 3)
-                       Proto.MaxLevel = (byte)(Proto.MinLevel + 2);
+                    if (Proto.CreatureType == 0 && Proto.CreatureSubType == 0)
+                    {
+                        Proto.SetCreatureTypesAndSubTypes();
+                        Database.SaveObject(Proto);
+                    }
+
+                    if (Proto.MinLevel == Proto.MaxLevel && Proto.MinLevel > 1)
+                        Proto.MaxLevel = (byte)(Proto.MinLevel + 1);
+                    else if (Proto.MaxLevel - Proto.MinLevel > 3)
+                        Proto.MaxLevel = (byte)(Proto.MinLevel + 2);
 
                     CreatureProtos.Add(Proto.Entry, Proto);
                 }
@@ -738,6 +746,48 @@ namespace WorldServer
 
 
             Log.Success("LoadCreatureSpawns", "Loaded " + CreatureSpawns.Count + " Creature_Spawns");
+        }
+
+        #endregion
+
+        #region Waypoints
+
+        public static Lookup<uint, Waypoint> LookupWaypoints;
+
+        [LoadingFunction(true)]
+        static public void LoadNpcWaypoints()
+        {
+            Log.Debug("WorldMgr", "Loading Npc Waypoints...");
+
+            if (FastLoading)
+                return;
+
+            IList<Waypoint> TableWaypoints = Database.SelectAllObjects<Waypoint>();
+            LookupWaypoints = (Lookup<uint, Waypoint>)TableWaypoints.ToLookup(W => W.CreatureSpawnGUID, W => W);
+
+            if (TableWaypoints != null)
+                Log.Success("LoadNpcWaypoints", "Loaded " + TableWaypoints.Count + " Waypoints");
+        }
+
+        static public List<Waypoint> GetNpcWaypoints(uint CreatureSpawnGuid)
+        {
+            IEnumerable<Waypoint> NpcWaypoints = LookupWaypoints[CreatureSpawnGuid];
+            return NpcWaypoints.ToList();
+        }
+
+        static public void DatabaseAddWaypoint(Waypoint AddWp)
+        {
+            Database.AddObject(AddWp);
+        }
+
+        static public void DatabaseSaveWaypoint(Waypoint SaveWp)
+        {
+            Database.SaveObject(SaveWp);
+        }
+
+        static public void DatabaseDeleteWaypoint(Waypoint DeleteWp)
+        {
+            Database.DeleteObject(DeleteWp); 
         }
 
         #endregion

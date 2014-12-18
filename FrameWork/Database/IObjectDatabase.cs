@@ -50,6 +50,9 @@ namespace FrameWork
         IList<TObject> SelectAllObjects<TObject>(IsolationLevel isolation)
             where TObject : DataObject;
 
+        int GetNextAutoIncrement<TObject>()
+            where TObject : DataObject;
+
         int GetObjectCount<TObject>()
             where TObject : DataObject;
 

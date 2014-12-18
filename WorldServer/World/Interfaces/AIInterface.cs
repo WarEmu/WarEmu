@@ -1,10 +1,9 @@
-﻿using System;
+﻿using Common;
+using FrameWork;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-
-using FrameWork;
-using Common;
 
 namespace WorldServer
 {
@@ -215,7 +214,6 @@ namespace WorldServer
         #endregion
 
         #region Waypoints
-
         public List<Waypoint> Waypoints = new List<Waypoint>();
         public Waypoint CurrentWaypoint;
         public byte CurrentWaypointType = Waypoint.Loop;
@@ -225,32 +223,133 @@ namespace WorldServer
         public bool Started = false;
         public bool Ended = false;
 
-        public void AddWaypoint(Waypoint Wp)
+        // Waypoints
+        private static readonly object WaypointsTableLock = new object();
+
+        public void AddWaypoint(Waypoint AddWp)
         {
-            if (Waypoints.Count == 0)
+            if (_Owner.IsCreature())
             {
-                Waypoint Base = new Waypoint();
-                Base.X = (ushort)_Owner.X;
-                Base.Y = (ushort)_Owner.Y;
-                Base.Z = (ushort)_Owner.Z;
-                Base.WaitAtEndMS = 2000;
-                Waypoints.Add(Base);
+                if (Waypoints.Count == 0)
+                {
+                    Waypoint StartWp = new Waypoint();
+                    StartWp.CreatureSpawnGUID = _Owner.GetCreature().Spawn.Guid;
+                    StartWp.GameObjectSpawnGUID = _Owner._ObjectId;
+                    StartWp.X = (ushort)_Owner.X;
+                    StartWp.Y = (ushort)_Owner.Y;
+                    StartWp.Z = (ushort)_Owner.Z;
+                    StartWp.Speed = AddWp.Speed;
+                    StartWp.WaitAtEndMS = AddWp.WaitAtEndMS;
+
+                    lock (WaypointsTableLock)
+                    {
+                        StartWp.GUID = Convert.ToUInt32(WorldMgr.Database.GetNextAutoIncrement<Waypoint>());
+                        Waypoints.Add(StartWp);
+                        WorldMgr.DatabaseAddWaypoint(StartWp);
+                    }
+                    // lock (WaypointsTableLock)
+                }
+                AddWp.CreatureSpawnGUID = _Owner.GetCreature().Spawn.Guid;
+                AddWp.GameObjectSpawnGUID = _Owner._ObjectId;
+                lock (WaypointsTableLock)
+                {
+                    AddWp.GUID = Convert.ToUInt32(WorldMgr.Database.GetNextAutoIncrement<Waypoint>());
+                    Waypoints.Add(AddWp);
+                    WorldMgr.DatabaseAddWaypoint(AddWp);
+                }
+                // lock (WaypointsTableLock)
+                Waypoint PrevWp = Waypoints[Waypoints.Count - 1];
+                PrevWp.NextWaypointGUID = AddWp.GUID;
+                SaveWaypoint(PrevWp);
             }
-
-            Waypoints.Add(Wp);
         }
 
-        public void RemoveWaypoint(Waypoint Wp)
+        public void SaveWaypoint(Waypoint SaveWp)
         {
-            Waypoints.Remove(Wp);
+            WorldMgr.DatabaseSaveWaypoint(SaveWp);
         }
 
-        public Waypoint GetWaypoint(int Id)
+        public void RemoveWaypoint(Waypoint RemoveWp)
         {
-            if (Id < 0 || Id >= Waypoints.Count)
-                return null;
+            switch (Waypoints.Count)
+            {
+                case 0:
+                case 1:
+                    break;
+                case 2:
+                    lock (WaypointsTableLock)
+                    {
+                        foreach (Waypoint Wp in Waypoints)
+                        {
+                            WorldMgr.DatabaseDeleteWaypoint(Wp);
+                        }
+                        Waypoints.Clear();
+                    }
+                    // lock (WaypointsTableLock)
+                    break;
+                default:
+                    lock (WaypointsTableLock)
+                    {
+                        int Index = -1;
+                        foreach (Waypoint Wp in Waypoints)
+                        {
+                            if (Wp.GUID == RemoveWp.GUID)
+                            {
+                                Index = Waypoints.IndexOf(Wp);
+                            }
+                        }
+                        if (Index != -1)
+                        {
+                            if (Index != 0)
+                            {
+                                if (Index == Waypoints.Count)
+                                {
+                                    Waypoints[Index - 1].NextWaypointGUID = 0;
+                                }
+                                else
+                                {
+                                    Waypoints[Index - 1].NextWaypointGUID = Waypoints[Index].NextWaypointGUID;
+                                }
+                            
+                                WorldMgr.DatabaseSaveWaypoint(Waypoints[Index - 1]);
+                                WorldMgr.DatabaseDeleteWaypoint(Waypoints[Index]);
+                                Waypoints.RemoveAt(Index);
+                            }
+                        }
+                    }
+                    // lock (WaypointsTableLock)
+                    break;
+            } // switch
+        }
 
-            return Waypoints[Id];
+        public void RemoveWaypoint(int WaypointGUID)
+        {
+            RemoveWaypoint(GetWaypoint(WaypointGUID));
+        }
+
+        public void RandomizeWaypoint(Waypoint RandomWp)
+        {
+            if (_Owner.GetCreature() != null)
+            {
+                RandomWp.X = (ushort)(_Owner.GetCreature().X + StaticRandom.Instance.Next(50) + StaticRandom.Instance.Next(100) + StaticRandom.Instance.Next(150));
+                RandomWp.Y = (ushort)(_Owner.GetCreature().Y + StaticRandom.Instance.Next(50) + StaticRandom.Instance.Next(100) + StaticRandom.Instance.Next(150));
+                RandomWp.Z = (ushort)_Owner.GetCreature().Z;
+                RandomWp.Speed = 10;
+                RandomWp.WaitAtEndMS = (uint)(5000 + StaticRandom.Instance.Next(10) * 1000);
+                SaveWaypoint(RandomWp);
+            }
+        }
+
+        public Waypoint GetWaypoint(int WaypointGUID)
+        {
+            foreach (Waypoint Wp in Waypoints)
+            {
+                if (Wp.GUID == WaypointGUID)
+                {
+                    return Wp;
+                }       
+            }
+            return null;
         }
 
         public void UpdateWaypoints(long Tick)

@@ -890,104 +890,6 @@ namespace WorldServer
             return true;
         }
 
-        static public bool NpcAddWaypoint(Player Plr, ref List<string> Values)
-        {
-            Object Target = Plr.CbtInterface.GetCurrentTarget();
-            if (Target == null || !Target.IsCreature())
-                return false;
-
-            Waypoint Wp = new Waypoint();
-            Wp.X = (ushort)Plr.X;
-            Wp.Y = (ushort)Plr.Y;
-            Wp.Z = (ushort)Plr.Z;
-            Wp.WaitAtEndMS = 2000;
-            Target.GetUnit().AiInterface.AddWaypoint(Wp);
-
-            // TODO : Save it
-            return true;
-        }
-
-        static public bool NpcMoveWaypoint(Player Plr, ref List<string> Values)
-        {
-            Object Target = Plr.CbtInterface.GetCurrentTarget();
-            if (Target == null || !Target.IsCreature())
-                return false;
-
-            int Id = GetInt(ref Values);
-            AIInterface IA = Target.GetCreature().AiInterface;
-
-            Waypoint Wp = IA.GetWaypoint(Id);
-            if (Wp == null)
-            {
-                Plr.SendMessage(0, "Server", "Invalid Waypoint ID. Use .waypoint list", SystemData.ChatLogFilters.CHATLOGFILTERS_SHOUT);
-                return true;
-            }
-            Wp.X = (ushort)Plr.X;
-            Wp.Y = (ushort)Plr.Y;
-            Wp.Z = (ushort)Plr.Z;
-            Target.GetUnit().AiInterface.AddWaypoint(Wp);
-
-            // TODO : Save it
-            return true;
-        }
-
-        static public bool NpcRemoveWaypoint(Player Plr, ref List<string> Values)
-        {
-            Object Target = Plr.CbtInterface.GetCurrentTarget();
-            if (Target == null || !Target.IsCreature())
-                return false;
-
-            int Id = GetInt(ref Values);
-            AIInterface IA = Target.GetCreature().AiInterface;
-
-            Waypoint Wp = IA.GetWaypoint(Id);
-            if (Wp == null)
-            {
-                Plr.SendMessage(0, "Server", "Invalid Waypoint ID. Use .waypoint list", SystemData.ChatLogFilters.CHATLOGFILTERS_SHOUT);
-                return true;
-            }
-            Target.GetUnit().AiInterface.RemoveWaypoint(Wp);
-
-            // TODO : Save it
-            return true;
-        }
-
-        static public bool NpcListWaypoint(Player Plr, ref List<string> Values)
-        {
-            Object Target = Plr.CbtInterface.GetCurrentTarget();
-            if (Target == null || !Target.IsCreature())
-                return false;
-
-            AIInterface IA = Target.GetCreature().AiInterface;
-            string Message = "Waypoints :" + IA.Waypoints.Count + "\n";
-            int Id = 0;
-            foreach (Waypoint Wp in IA.Waypoints)
-            {
-                Message += Id + ":" + Wp.X + "," + Wp.Y + "," + Wp.Z + ",Text=" + Wp.TextOnStart + "\n";
-            }
-
-            Plr.SendMessage(0, "Server", Message, SystemData.ChatLogFilters.CHATLOGFILTERS_SHOUT);
-
-            // TODO : Save it
-            return true;
-        }
-
-        static public bool NpcInfoWaypoint(Player Plr, ref List<string> Values)
-        {
-            Object Target = Plr.CbtInterface.GetCurrentTarget();
-            if (Target == null || !Target.IsCreature())
-                return false;
-
-            AIInterface IA = Target.GetCreature().AiInterface;
-            string Message = "";
-            Message += "Current = " + IA.CurrentWaypointID + ",NextTime=" + (IA.NextAllowedMovementTime - TCPManager.GetTimeStampMS()) + ",Started=" + IA.Started + ",Ended=" + IA.Ended + ",Back=" + IA.IsWalkingBack + ",Type=" + IA.CurrentWaypointType + ",State=" + IA.State;
-
-            Plr.SendMessage(0, "Server", Message, SystemData.ChatLogFilters.CHATLOGFILTERS_SHOUT);
-
-            // TODO : Save it
-            return true;
-        }
-
         static public bool NpcGoTo(Player Plr, ref List<string> Values)
         {
             int X = GetInt(ref Values); // 21047
@@ -1115,6 +1017,108 @@ namespace WorldServer
         }
 
         #endregion
+
+        #region Waypoint
+
+        static public bool NpcAddWaypoint(Player Plr, ref List<string> Values)
+        {
+            Object Target = Plr.CbtInterface.GetCurrentTarget();
+            if (Target == null || !Target.IsCreature())
+                return false;
+
+            Waypoint Wp = new Waypoint();
+            Wp.X = (ushort)Plr.X;
+            Wp.Y = (ushort)Plr.Y;
+            Wp.Z = (ushort)Plr.Z;
+            Wp.WaitAtEndMS = 2000;
+
+            Target.GetUnit().AiInterface.AddWaypoint(Wp);
+
+            List<string> Empty = null;
+            return NpcListWaypoint(Plr, ref Empty);
+        }
+
+        static public bool NpcMoveWaypoint(Player Plr, ref List<string> Values)
+        {
+            Object Target = Plr.CbtInterface.GetCurrentTarget();
+            if (Target == null || !Target.IsCreature())
+                return false;
+
+            int Id = GetInt(ref Values);
+            AIInterface IA = Target.GetCreature().AiInterface;
+
+            Waypoint Wp = IA.GetWaypoint(Id);
+            if (Wp == null)
+            {
+                Plr.SendMessage(0, "Server", "Invalid Waypoint ID. Use .waypoint list", SystemData.ChatLogFilters.CHATLOGFILTERS_SHOUT);
+                return true;
+            }
+
+            Wp.X = (ushort)Plr.X;
+            Wp.Y = (ushort)Plr.Y;
+            Wp.Z = (ushort)Plr.Z;
+            
+            IA.SaveWaypoint(Wp);
+ 
+            List<string> Empty = null;
+            return NpcListWaypoint(Plr, ref Empty);
+        }
+
+        static public bool NpcRemoveWaypoint(Player Plr, ref List<string> Values)
+        {
+            Object Target = Plr.CbtInterface.GetCurrentTarget();
+            if (Target == null || !Target.IsCreature())
+                return false;
+
+            int Id = GetInt(ref Values);
+            AIInterface IA = Target.GetCreature().AiInterface;
+
+            Waypoint Wp = IA.GetWaypoint(Id);
+            if (Wp == null)
+            {
+                Plr.SendMessage(0, "Server", "Invalid Waypoint ID. Use .waypoint list", SystemData.ChatLogFilters.CHATLOGFILTERS_SHOUT);
+                return true;
+            }
+
+            IA.RemoveWaypoint(Wp);
+
+            List<string> Empty = null;
+            return NpcListWaypoint(Plr, ref Empty);
+        }
+
+        static public bool NpcListWaypoint(Player Plr, ref List<string> Values)
+        {
+            Object Target = Plr.CbtInterface.GetCurrentTarget();
+            if (Target == null || !Target.IsCreature())
+                return false;
+
+            AIInterface IA = Target.GetCreature().AiInterface;
+            string Message = "Waypoints :" + IA.Waypoints.Count + "\n";
+
+            foreach (Waypoint Wp in IA.Waypoints)
+            {
+                Message += Wp.ToString() + "\n";
+            }
+
+            Plr.SendMessage(0, "Server", Message, SystemData.ChatLogFilters.CHATLOGFILTERS_SHOUT);
+            return true;
+        }
+
+        static public bool NpcInfoWaypoint(Player Plr, ref List<string> Values)
+        {
+            Object Target = Plr.CbtInterface.GetCurrentTarget();
+            if (Target == null || !Target.IsCreature())
+                return false;
+
+            AIInterface IA = Target.GetCreature().AiInterface;
+            string Message = "";
+            Message += "Current = " + IA.CurrentWaypointID + ",NextTime=" + (IA.NextAllowedMovementTime - TCPManager.GetTimeStampMS()) + ",Started=" + IA.Started + ",Ended=" + IA.Ended + ",Back=" + IA.IsWalkingBack + ",Type=" + IA.CurrentWaypointType + ",State=" + IA.State;
+
+            Plr.SendMessage(0, "Server", Message, SystemData.ChatLogFilters.CHATLOGFILTERS_SHOUT);
+            return true;
+        }
+
+        #endregion // Waypoint
 
         #region States
 
