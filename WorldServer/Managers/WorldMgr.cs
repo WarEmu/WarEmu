@@ -676,13 +676,21 @@ namespace WorldServer
             if (Protos != null)
                 foreach (Creature_proto Proto in Protos)
                 {
-                   if(Proto.Model1 == 0 && Proto.Model2 == 0)
+                    if (Proto.Model1 == 0 && Proto.Model2 == 0)
+                    {
                         Proto.Model1 = Proto.Model2 = 1;
+                    }
 
-                   if (Proto.MinLevel == Proto.MaxLevel && Proto.MinLevel > 1)
-                       Proto.MaxLevel = (byte)(Proto.MinLevel + 1);
-                   else if (Proto.MaxLevel - Proto.MinLevel > 3)
-                       Proto.MaxLevel = (byte)(Proto.MinLevel + 2);
+                    if (Proto.CreatureType == 0 && Proto.CreatureSubType == 0)
+                    {
+                        Proto.SetCreatureTypesAndSubTypes();
+                        Database.SaveObject(Proto);
+                    }
+
+                    if (Proto.MinLevel == Proto.MaxLevel && Proto.MinLevel > 1)
+                        Proto.MaxLevel = (byte)(Proto.MinLevel + 1);
+                    else if (Proto.MaxLevel - Proto.MinLevel > 3)
+                        Proto.MaxLevel = (byte)(Proto.MinLevel + 2);
 
                     CreatureProtos.Add(Proto.Entry, Proto);
                 }
