@@ -76,6 +76,7 @@
     <Compile Include="Configs\WorldConfigs.cs" />
     <Compile Include="Console\ReloadScriptsCommand.cs" />
     <Compile Include="Managers\AreaMapMgr.cs" />
+    <Compile Include="Managers\ChannelMgr.cs" />
     <Compile Include="Managers\CharMgr.cs" />
     <Compile Include="Managers\ClientFileMgr.cs" />
     <Compile Include="Managers\CommandMgr.cs" />

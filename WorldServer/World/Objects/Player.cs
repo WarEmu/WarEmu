@@ -94,7 +94,7 @@ namespace WorldServer
         }
         static public Player CreatePlayer(GameClient Client, Character Char)
         {
-            GameClient Other = (Client.Server as TCPServer).GetClientByAccount(Client,Char.AccountId);
+            GameClient Other = (Client.Server as TCPServer).GetClientByAccount(Client, Char.AccountId);
             if (Other != null)
                 Other.Disconnect();
 
@@ -115,7 +115,7 @@ namespace WorldServer
                     if (Plr == null || Plr.IsDisposed || !Plr.IsInWorld())
                         continue;
 
-                    if ( Plr.SocInterface.Hide
+                    if (Plr.SocInterface.Hide
                         || (Name.Length > 0 && !Plr.Name.ToLower().StartsWith(Name))
                         || (Career != 0 && Career != Plr._Info.Career)
                         || (ZoneId != 255 && Plr.Zone.ZoneId != ZoneId)
@@ -137,7 +137,8 @@ namespace WorldServer
         }
 
         #endregion
-
+        public Boolean PvpEnabled { get; set; }
+        public Dictionary<int, string> Channels;
         public Character _Info;
         public Character_value _Value;
         public GameClient _Client;
@@ -172,8 +173,10 @@ namespace WorldServer
         }
         public bool _Inited = false;
 
-        public Player(GameClient Client,Character Info) : base()
+        public Player(GameClient Client, Character Info)
+            : base()
         {
+            Channels = new Dictionary<int, string>();
             _Client = Client;
             _Info = Info;
             _Value = Info.Value;
@@ -186,7 +189,7 @@ namespace WorldServer
             SocInterface = AddInterface<SocialInterface>();
             TokInterface = AddInterface<TokInterface>();
             MlInterface = AddInterface<MailInterface>();
-            
+
             EvtInterface.AddEventNotify(EventName.ON_MOVE, CancelQuit);
             EvtInterface.AddEventNotify(EventName.ON_RECEIVE_DAMAGE, CancelQuit);
             EvtInterface.AddEventNotify(EventName.ON_DEAL_DAMAGE, CancelQuit);
@@ -241,7 +244,7 @@ namespace WorldServer
             {
                 _Client.Plr = null;
                 _Client.State = (int)eClientState.CharScreen;
-            }    
+            }
         }
 
         public void SendSniff(string Str)
@@ -252,7 +255,7 @@ namespace WorldServer
                 string Line;
                 while ((Line = Reader.ReadLine()) != null)
                 {
-                    Result+=Line.Substring(1, 48).Replace(" ", string.Empty);
+                    Result += Line.Substring(1, 48).Replace(" ", string.Empty);
                 }
             }
 
@@ -343,7 +346,7 @@ namespace WorldServer
 
         public void SetPVPFlag(bool State)
         {
-            if(State == false)
+            if (State == false)
                 Faction = (byte)(Realm == GameData.Realms.REALMS_REALM_DESTRUCTION ? 8 : 6);
             else
                 Faction = (byte)(Realm == GameData.Realms.REALMS_REALM_DESTRUCTION ? 72 : 68);
@@ -356,6 +359,8 @@ namespace WorldServer
                         SendMeTo(Plr);
                 }
             }
+
+            PvpEnabled = State;
         }
 
         #region Packets
@@ -396,7 +401,7 @@ namespace WorldServer
             packet.Position = 0;
             packet.Write(Buf, 0, Buf.Length);
             SendPacket(packet);
-            
+
         }
         public void GetPacketIn(bool Clear)
         {
@@ -475,7 +480,7 @@ namespace WorldServer
 
             base.SetDeath(Killer);
 
-            if(Killer.IsPlayer())
+            if (Killer.IsPlayer())
                 WorldMgr.GenerateRenown(Killer.GetPlayer(), this);
 
             PacketOut Out = new PacketOut((byte)Opcodes.F_PLAYER_DEATH);
@@ -490,7 +495,7 @@ namespace WorldServer
         {
             RespawnPlayer();
         }
-	
+
         public void PreRespawnPlayer()
         {
             // Remove automatic respawn function
@@ -524,7 +529,7 @@ namespace WorldServer
             PacketOut Out = new PacketOut((byte)Opcodes.F_PLAYER_CLEAR_DEATH);
             Out.WriteUInt16(Oid);
             Out.WriteUInt16(0);
-            DispatchPacket(Out,true);
+            DispatchPacket(Out, true);
 
             base.RezUnit();
 
@@ -578,7 +583,7 @@ namespace WorldServer
 
             AddXp(RestXp);
         }
-        public Dictionary<byte,UInt16> ApplyLevel()
+        public Dictionary<byte, UInt16> ApplyLevel()
         {
             Dictionary<byte, UInt16> Diff = new Dictionary<byte, ushort>();
 
@@ -589,9 +594,9 @@ namespace WorldServer
             foreach (CharacterInfo_stats Stat in NewStats)
             {
                 UInt16 Base = StsInterface.GetBaseStat(Stat.StatId);
-                
-                if(Stat.StatValue > Base)
-                    Diff.Add(Stat.StatId,(ushort)(Stat.StatValue-Base));
+
+                if (Stat.StatValue > Base)
+                    Diff.Add(Stat.StatId, (ushort)(Stat.StatValue - Base));
 
                 StsInterface.SetBaseStat(Stat.StatId, Stat.StatValue);
             }
@@ -625,7 +630,7 @@ namespace WorldServer
         }
         public void RenownUp(uint Rest)
         {
-            CurrentRenown = WorldMgr.GetRenown_Info((byte)(_Value.RenownRank+1));
+            CurrentRenown = WorldMgr.GetRenown_Info((byte)(_Value.RenownRank + 1));
             if (CurrentRenown == null)
                 return;
 
@@ -686,12 +691,12 @@ namespace WorldServer
             Out.WritePascalString(Program.Rm.Name);
             Out.Fill(0, 3);
             SendPacket(Out);
-            
 
-          /*  PacketOut Out = new PacketOut((byte)Opcodes.S_PLAYER_INITTED);
-            Out.WriteHexStringBytes("00CA00000028D5BF1D7F0000000CF824000CAFC7051700020000000000080001001A000000000000084261646C616E6473000000");
-            SendPacket(Out);
-            */
+
+            /*  PacketOut Out = new PacketOut((byte)Opcodes.S_PLAYER_INITTED);
+              Out.WriteHexStringBytes("00CA00000028D5BF1D7F0000000CF824000CAFC7051700020000000000080001001A000000000000084261646C616E6473000000");
+              SendPacket(Out);
+              */
 
         }
         public void SendSkills()
@@ -956,7 +961,7 @@ namespace WorldServer
 
             SendPacket(Out);
         }
-        public void SendMessage(Object Sender, string Text,SystemData.ChatLogFilters Filter)
+        public void SendMessage(Object Sender, string Text, SystemData.ChatLogFilters Filter)
         {
             SendMessage(Sender != null ? Sender.Oid : (UInt16)0, Sender != null ? Sender.Name : "", Text, Filter);
         }
@@ -979,7 +984,7 @@ namespace WorldServer
         {
             if (Plr == null || Plr.IsDisposed || Plr.Client == null)
                 return;
- 
+
             if (IsDisposed || Client == null)
                 return;
 
@@ -1035,7 +1040,7 @@ namespace WorldServer
 
         #region Quit
 
-        public int  DisconnectTime= DISCONNECT_TIME; // 20 Secondes = 20000
+        public int DisconnectTime = DISCONNECT_TIME; // 20 Secondes = 20000
         public bool CloseClient = false;
         public bool Leaving = false;
         public bool StopQuit()
@@ -1052,7 +1057,7 @@ namespace WorldServer
         }
         public bool CancelQuit(Object Sender, object Args)
         {
-            if(StopQuit())
+            if (StopQuit())
                 SendLocalizeString("", GameData.Localized_text.TEXT_CANCELLED_LOGOUT);
 
             return false;
@@ -1101,10 +1106,10 @@ namespace WorldServer
                 DisconnectTime -= 5000;
                 this.CloseClient = CloseClient;
 
-                if (!IsDisposed && ( DisconnectTime < 0 || GmLevel >= 1)) // Leave
+                if (!IsDisposed && (DisconnectTime < 0 || GmLevel >= 1)) // Leave
                     Dispose();
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Log.Error("Quit", e.ToString());
             }
@@ -1131,11 +1136,11 @@ namespace WorldServer
 
         #region Positions
 
-        public int LastCX,LastCY = 0;
+        public int LastCX, LastCY = 0;
         public int LastX, LastY = 0;
         public MapPiece CurrentPiece;
 
-        public override bool SetPosition(ushort PinX, ushort PinY, ushort PinZ, ushort Head, bool SendState=false)
+        public override bool SetPosition(ushort PinX, ushort PinY, ushort PinZ, ushort Head, bool SendState = false)
         {
             if (_Client.State != (int)eClientState.Playing)
             {
@@ -1188,7 +1193,7 @@ namespace WorldServer
             Log.Info("Player", "Teleport : " + ZoneID + "," + WorldX + "," + WorldY + "," + WorldZ);
 
             Zone_Info Info = WorldMgr.GetZone_Info(ZoneID);
-            if(Info == null)
+            if (Info == null)
                 return;
 
             // Change Region , so change thread and maps
@@ -1247,7 +1252,7 @@ namespace WorldServer
 
         public override string ToString()
         {
-            string Info="";
+            string Info = "";
 
             Info += "Name=" + Name + ",Ip=" + (Client != null ? Client.GetIp : "Disconnected") + base.ToString();
 
