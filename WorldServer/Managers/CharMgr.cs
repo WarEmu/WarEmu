@@ -221,6 +221,7 @@ namespace WorldServer
             Dictionary<UInt32, List<Character_tok>> char_toks = (Database.SelectAllObjects<Character_tok>() as List<Character_tok>).GroupBy(v => v.CharacterId).ToDictionary(g => g.Key, g => g.ToList());
             Dictionary<UInt32, List<Character_quest>> char_quests = (Database.SelectAllObjects<Character_quest>() as List<Character_quest>).GroupBy(v => v.CharacterId).ToDictionary(g => g.Key, g => g.ToList());
             Dictionary<UInt32, List<Characters_influence>> char_influences = (Database.SelectAllObjects<Characters_influence>() as List<Characters_influence>).GroupBy(v => v.CharacterId).ToDictionary(g => (UInt32)g.Key, g => g.ToList());
+            Dictionary<UInt32, List<Character_mail>> char_mail = (Database.SelectAllObjects<Character_mail>() as List<Character_mail>).GroupBy(v => v.CharacterId).ToDictionary(g => (UInt32)g.Key, g => g.ToList());
 
             int Count = 0;
             foreach (Character Char in Chars)
@@ -230,6 +231,7 @@ namespace WorldServer
                 if (char_toks.ContainsKey(Char.CharacterId)) Char.Toks = char_toks[Char.CharacterId];
                 if (char_quests.ContainsKey(Char.CharacterId)) Char.Quests = char_quests[Char.CharacterId];
                 if (char_influences.ContainsKey(Char.CharacterId)) Char.Influences = char_influences[Char.CharacterId];
+                if (char_mail.ContainsKey(Char.CharacterId)) Char.Mails = char_mail[Char.CharacterId].ToArray();
 
                 AddChar(Char);
                 ++Count;
