@@ -27,7 +27,7 @@ namespace WorldServer.Managers
             {
                 foreach (Player member in Channels[channel])
                 {
-                    if (member.Id.Equals(Plr.Id))
+                    if (member.CharacterId.Equals(Plr.CharacterId))
                     {
                         inChannel = true;
                         break;
