@@ -8,11 +8,11 @@ namespace WorldServer.Managers
     public sealed class ChannelMgr
     {
         private static readonly ChannelMgr me = new ChannelMgr();
-        public static Dictionary<string, List<Player>> Channels;
+        public static Dictionary<string, Channel> Channels;
 
         public ChannelMgr()
         {
-            Channels = new Dictionary<string, List<Player>>();
+            Channels = new Dictionary<string, Channel>();
         }
 
         public static bool Exists(String ChannelName)
@@ -25,7 +25,7 @@ namespace WorldServer.Managers
             bool inChannel = false;
             if (Channels.ContainsKey(channel))
             {
-                foreach (Player member in Channels[channel])
+                foreach (Player member in Channels[channel].Members)
                 {
                     if (member.CharacterId.Equals(Plr.CharacterId))
                     {
@@ -43,7 +43,7 @@ namespace WorldServer.Managers
             if (Channels.ContainsKey(channel))
             {
                 // Player leaving channel
-                Channels[channel].Remove(Plr);
+                Channels[channel].Members.Remove(Plr);
 
                 if (Plr.Channels.ContainsValue(channel))
                 {
@@ -63,19 +63,29 @@ namespace WorldServer.Managers
                 // Player already in channel
                 Plr.SendLocalizeString("", GameData.Localized_text.TEXT_CHATCHANNEL_ALREADY_MEMBER);
             }
+            else if (Channels.ContainsKey(channel) && !Channels[channel].Faction.Equals(Plr.Faction))
+            {
+                // Channel belongs to opposite faction
+                Plr.SendLocalizeString("The channel '" + channel + "' belongs to the opposing faction.", GameData.Localized_text.CHAT_TAG_DEFAULT);
+            }
             else
             {
                 if (Channels.ContainsKey(channel))
                 {
                     // Player joined channel
-                    Channels[channel].Add(Plr);
+                    Channels[channel].Members.Add(Plr);
                 }
                 else
                 {
                     // Start new channel
-                    Channels[channel] = new List<Player>()
+                    Channels[channel] = new Channel()
                     {
-                        Plr
+                        Members = new List<Player>(){
+                            Plr
+                        },
+                        Name = channel,
+                        IsPublic = true,
+                        Faction = Plr.Faction
                     };
                     Plr.SendLocalizeString(channel, GameData.Localized_text.TEXT_CHATCHANNEL_CREATE);
                 }

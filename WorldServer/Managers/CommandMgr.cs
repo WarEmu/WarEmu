@@ -366,33 +366,43 @@ namespace WorldServer
                 }
                 else if (Command.ToUpper().Equals("WHO"))
                 {
-                    Plr.SendLocalizeString("'" + Text + "' Channel Members", GameData.Localized_text.CHAT_TAG_DEFAULT);
-                    foreach (var player in Managers.ChannelMgr.Channels[Text])
-                    {
-                        Plr.SendLocalizeString(" -> " + player.Name, GameData.Localized_text.CHAT_TAG_DEFAULT);
+                    // Check if player is in channel. If not then reject request.
+                    if (Managers.ChannelMgr.IsPlayerInChannel(Text, Plr)) {
+                        Plr.SendLocalizeString("'" + Text + "' Channel Members", GameData.Localized_text.CHAT_TAG_DEFAULT);
+                        foreach (var player in Managers.ChannelMgr.Channels[Text].Members)
+                        {
+                            Plr.SendLocalizeString(" -> " + player.Name, GameData.Localized_text.CHAT_TAG_DEFAULT);
+                        }
+                    } else {
+                            Plr.SendLocalizeString("You are not a member of " + Text + ".", GameData.Localized_text.CHAT_TAG_DEFAULT);
                     }
                 }
                 else if (Command.ToUpper().Equals("SAY"))
                 {
                     string channel = Text.Substring(0, Text.IndexOf(" "));
                     Text = Text.Substring(Text.IndexOf(" ")).Trim();
-                    // Regional Chat
+                    // Zone Chat
                     if (channel == "1")
                     {
                         lock (Plr.Zone._Players)
                         {
                             foreach (Player p in Plr.Zone._Players)
                             {
-                                Plr.SendLocalizeString(String.Format("[{0}][{1}]: {2}", Plr.Zone.Info.Name, Plr.Name, Text), GameData.Localized_text.CHAT_TAG_DEFAULT);
+                                if (p.FactionId.Equals(Plr.FactionId)) // Same faction only
+                                    Plr.SendLocalizeString(String.Format("[{0}][{1}]: {2}", Plr.Zone.Info.Name, Plr.Name, Text), GameData.Localized_text.CHAT_TAG_DEFAULT);
                             }
                         }
                     }
+                    // RvR Chat
                     else if (channel == "2")
                     {
-                        foreach (Player p in Plr.Zone._Players)
+                        foreach (ZoneMgr zone in Plr.Region.ZonesMgr)
                         {
-                            if (p.PvpEnabled)
-                                Plr.SendLocalizeString(String.Format("[{0}][{1}]: {2}", "RvR-" + Plr.Zone.Info.Name, Plr.Name, Text), GameData.Localized_text.CHAT_TAG_DEFAULT);
+                            foreach (Player p in zone._Players)
+                            {
+                                if (p.FactionId.Equals(Plr.FactionId)) // Same faction only
+                                    Plr.SendLocalizeString(String.Format("[{0}][{1}]: {2}", "RvR", Plr.Name, Text), GameData.Localized_text.CHAT_TAG_DEFAULT);
+                            }
                         }
                     }
                     else if (System.Text.RegularExpressions.Regex.IsMatch(channel, @"^\d+$"))
@@ -408,6 +418,7 @@ namespace WorldServer
                     }
                     else
                     {
+
                         Plr.SendLocalizeString("", GameData.Localized_text.TEXT_CHATCHANNEL_NOT_IN_CHANNEL);
                     }
                 }

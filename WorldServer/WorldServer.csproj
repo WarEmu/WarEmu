@@ -127,6 +127,7 @@
     <Compile Include="World\Interfaces\MailInterface.cs" />
     <Compile Include="World\Interfaces\ScriptsInterface.cs" />
     <Compile Include="World\Mounts\Mount.cs" />
+    <Compile Include="World\Objects\Channel.cs" />
     <Compile Include="World\Objects\Group.cs" />
     <Compile Include="World\Objects\Item.cs" />
     <Compile Include="World\Interfaces\ItemsInterface.cs" />
