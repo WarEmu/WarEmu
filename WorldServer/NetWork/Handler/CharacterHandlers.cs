@@ -222,9 +222,14 @@ namespace WorldServer
         {
             GameClient cclient = client as GameClient;
             RandomNameInfo Info = BaseClient.ByteToType<RandomNameInfo>(packet);
-
-            List<Random_name> Names = CharMgr.GetRandomNames();
-
+            var all_names = CharMgr.GetRandomNames();
+            List<Random_name> Names = new List<Random_name>();
+            while (Names.Count < 10)
+            {
+                var temp = all_names.ElementAt(new Random().Next(1, all_names.Count()));
+                if (Player._Players.Where(p => p.Name.ToUpper().Equals(temp.Name.ToUpper())).Count() == 0)
+                    Names.Add(temp);
+            }
             PacketOut Out = new PacketOut((byte)Opcodes.F_RANDOM_NAME_LIST_INFO);
             Out.WriteByte(0);
             Out.WriteByte(Info.Unk);
