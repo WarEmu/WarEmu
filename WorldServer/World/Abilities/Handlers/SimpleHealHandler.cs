@@ -56,7 +56,7 @@ namespace WorldServer
         {
             GameData.AbilityResult Result = GameData.AbilityResult.ABILITYRESULT_OK;
 
-            if (Target == null || !Target.IsPlayer())
+            if (Target == null || !Target.IsPlayer()) //nonplayer Chars are illegal too
                 Result = GameData.AbilityResult.ABILITYRESULT_ILLEGALTARGET;
             else if (Target.IsDead)
                 Result = GameData.AbilityResult.ABILITYRESULT_ILLEGALTARGET_DEAD;
