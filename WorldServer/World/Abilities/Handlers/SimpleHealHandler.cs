@@ -41,7 +41,7 @@ namespace WorldServer
             {
                 Target = Ab.Caster.CbtInterface.GetTarget(GameData.TargetTypes.TARGETTYPES_TARGET_ALLY);
 
-                if (Target == null)
+                if (Target == null && Target.IsPlayer())
                     Target = Ab.Caster.GetUnit();
             }
         }
