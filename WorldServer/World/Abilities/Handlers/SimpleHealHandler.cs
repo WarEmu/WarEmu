@@ -41,7 +41,7 @@ namespace WorldServer
             {
                 Target = Ab.Caster.CbtInterface.GetTarget(GameData.TargetTypes.TARGETTYPES_TARGET_ALLY);
 
-                if (Target == null && Target.IsPlayer())
+                if (Target == null)
                     Target = Ab.Caster.GetUnit();
             }
         }
@@ -56,7 +56,7 @@ namespace WorldServer
         {
             GameData.AbilityResult Result = GameData.AbilityResult.ABILITYRESULT_OK;
 
-            if (Target == null)
+            if (Target == null || !Target.IsPlayer())
                 Result = GameData.AbilityResult.ABILITYRESULT_ILLEGALTARGET;
             else if (Target.IsDead)
                 Result = GameData.AbilityResult.ABILITYRESULT_ILLEGALTARGET_DEAD;
