@@ -160,7 +160,7 @@ namespace Common
 
         public List<Characters_influence> Influences;
 
-        [Relation(LocalField = "CharacterId", RemoteField = "CharacterId", AutoLoad = true, AutoDelete = true)]
+        [Relation(LocalField = "CharacterId", RemoteField = "CharacterId", AutoLoad = false, AutoDelete = true)]
         public Character_mail[] Mails;
     }
 }
