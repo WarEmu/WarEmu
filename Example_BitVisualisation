@@ -1,0 +1,104 @@
+// Example program
+#include <iostream>
+#include <string>
+#include <iomanip>      // std::setw
+#include <string>
+
+enum BIT
+{
+    ONE     =   1,
+    TWO     =   2,
+    THREE   =   4,
+    VOUR    =   8,
+    FIVE    =  16,
+    SIX     =  32,
+    SEVEN   =  64,
+    EIGHT   = 128
+};
+
+unsigned char 
+GetBit( unsigned char value, BIT bit )
+{
+    if( value & bit ) 
+        return '1';
+    else
+        return '0';
+}
+
+std::string 
+GetBitsOf( unsigned char value, bool printValueFront = false )
+{
+    std::string ret;
+    if( printValueFront )
+        ret += (int)value + ": ";
+    
+    ret += GetBit( value, EIGHT );
+    ret += GetBit( value, SEVEN );
+    ret += GetBit( value, SIX );
+    ret += GetBit( value, FIVE );
+    ret += " ";
+    ret += GetBit( value, VOUR );
+    ret += GetBit( value, THREE );
+    ret += GetBit( value, TWO );
+    ret += GetBit( value, ONE );
+    
+    return ret;
+}
+
+std::string 
+GetDamageByte( unsigned short damage )
+{
+    std::string ret;
+    
+    unsigned char totalByte[] = {0,0};
+    totalByte[0] = 128+(damage%64)*2;
+    totalByte[1] = damage/64;
+    
+    ret += GetBitsOf(totalByte[1]) + "|" + GetBitsOf(totalByte[0]);
+    
+    return ret;
+}
+
+std::string 
+GetHealByte( unsigned short damage )
+{
+    std::string ret;
+    
+    unsigned char totalByte[] = {0,0};
+    totalByte[0] = 128+(damage%64)*2+1;
+    totalByte[1] = damage/64;
+    
+    ret += GetBitsOf(totalByte[1]) + "|" + GetBitsOf(totalByte[0]);
+    
+    return ret;
+}
+
+std::string 
+GetDamageAndHealByte(unsigned short value)
+{
+    std::string ret;
+    ret += std::to_string(value) + ": " + GetDamageByte(value) + "   " + GetHealByte(value);
+    return ret;
+}
+
+int main()
+{
+    std::cout << GetDamageAndHealByte(0) << std::endl;
+    std::cout << GetDamageAndHealByte(1) << std::endl;
+    std::cout << GetDamageAndHealByte(2) << std::endl;
+    std::cout << GetDamageAndHealByte(3) << std::endl;
+    std::cout << GetDamageAndHealByte(4) << std::endl;
+    std::cout << GetDamageAndHealByte(5) << std::endl;
+    std::cout << GetDamageAndHealByte(6) << std::endl;
+    std::cout << GetDamageAndHealByte(7) << std::endl;
+    std::cout << std::endl;
+    std::cout << GetDamageAndHealByte(62) << std::endl;
+    std::cout << GetDamageAndHealByte(63) << std::endl;
+    std::cout << GetDamageAndHealByte(64) << std::endl;
+    std::cout << GetDamageAndHealByte(65) << std::endl;
+    std::cout << GetDamageAndHealByte(66) << std::endl;
+    std::cout << std::endl;
+    std::cout << GetDamageAndHealByte(16383) << std::endl;
+    
+    return 0;
+}

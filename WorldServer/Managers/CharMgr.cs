@@ -215,20 +215,23 @@ namespace WorldServer
         static public void LoadCharacters()
         {
             List<Character> Chars = Database.SelectAllObjects<Character>() as List<Character>;
-            List<Character_value> Values = Database.SelectAllObjects<Character_value>() as List<Character_value>;
-            List<Character_social> Socials = Database.SelectAllObjects<Character_social>() as List<Character_social>;
-            List<Character_tok> Toks = Database.SelectAllObjects<Character_tok>() as List<Character_tok>;
-            List<Character_quest> Quests = Database.SelectAllObjects<Character_quest>() as List<Character_quest>;
-            List<Characters_influence> Influences = Database.SelectAllObjects<Characters_influence>() as List<Characters_influence>;
+
+            Dictionary<UInt32, Character_value> char_values = (Database.SelectAllObjects<Character_value>() as List<Character_value>).GroupBy(v => v.CharacterId).ToDictionary(g => g.Key, g => g.FirstOrDefault());
+            Dictionary<UInt32, List<Character_social>> char_socials = (Database.SelectAllObjects<Character_social>() as List<Character_social>).GroupBy(v => v.CharacterId).ToDictionary(g => g.Key, g => g.ToList());
+            Dictionary<UInt32, List<Character_tok>> char_toks = (Database.SelectAllObjects<Character_tok>() as List<Character_tok>).GroupBy(v => v.CharacterId).ToDictionary(g => g.Key, g => g.ToList());
+            Dictionary<UInt32, List<Character_quest>> char_quests = (Database.SelectAllObjects<Character_quest>() as List<Character_quest>).GroupBy(v => v.CharacterId).ToDictionary(g => g.Key, g => g.ToList());
+            Dictionary<UInt32, List<Characters_influence>> char_influences = (Database.SelectAllObjects<Characters_influence>() as List<Characters_influence>).GroupBy(v => v.CharacterId).ToDictionary(g => (UInt32)g.Key, g => g.ToList());
+            Dictionary<UInt32, List<Character_mail>> char_mail = (Database.SelectAllObjects<Character_mail>() as List<Character_mail>).GroupBy(v => v.CharacterId).ToDictionary(g => (UInt32)g.Key, g => g.ToList());
 
             int Count = 0;
             foreach (Character Char in Chars)
             {
-                Char.Value = Values.Find(info => info.CharacterId == Char.CharacterId);
-                Char.Socials = Socials.FindAll(info => info.CharacterId == Char.CharacterId);
-                Char.Toks = Toks.FindAll(info => info.CharacterId == Char.CharacterId);
-                Char.Quests = Quests.FindAll(info => info.CharacterId == Char.CharacterId);
-                Char.Influences = Influences.FindAll(info => info.CharacterId == Char.CharacterId);
+                if (char_values.ContainsKey(Char.CharacterId)) Char.Value = char_values[Char.CharacterId];
+                if (char_socials.ContainsKey(Char.CharacterId)) Char.Socials = char_socials[Char.CharacterId];
+                if (char_toks.ContainsKey(Char.CharacterId)) Char.Toks = char_toks[Char.CharacterId];
+                if (char_quests.ContainsKey(Char.CharacterId)) Char.Quests = char_quests[Char.CharacterId];
+                if (char_influences.ContainsKey(Char.CharacterId)) Char.Influences = char_influences[Char.CharacterId];
+                if (char_mail.ContainsKey(Char.CharacterId)) Char.Mails = char_mail[Char.CharacterId].ToArray();
 
                 AddChar(Char);
                 ++Count;
